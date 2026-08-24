@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Files Run</title>
+<meta name="description" content="An endless runner about document custody.">
+<meta name="theme-color" content="#0B0D12">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Files Run">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="assets/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="assets/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div id="viewport">
+  <div id="stage">
+
+    <!-- ── The tunnel: background plate, travelling entities, the two runners ── -->
+    <div id="field">
+      <div id="floor"></div>
+      <div id="world"></div>
+
+      <div id="runner" class="sprite"><i></i></div>
+      <div id="speedTag">2&times; SPEED</div>
+
+      <div id="pursuer" class="sprite"><i></i></div>
+      <div id="gas" class="sprite"></div>
+
+      <div id="vignette"></div>
+      <div id="flash"></div>
+    </div>
+
+    <!-- ── 2a · gameplay HUD ── -->
+    <div id="hud" class="screen">
+      <div class="prox">
+        <div class="prox-track"><div class="prox-fill" id="proxFill"></div></div>
+        <div class="prox-labels">
+          <div>Proximity</div>
+          <div id="proxState" class="closing">Closing</div>
+        </div>
+      </div>
+
+      <div class="stat stat-l"><div class="num" id="pages">24</div><div class="lab">PAGES</div></div>
+      <div class="stat stat-r"><div class="num" id="dist">0 M</div><div class="lab" id="hiSmall">HI 0</div></div>
+
+      <!-- ── 2b · power-up banner ── -->
+      <div id="delay" class="banner">
+        <div class="banner-top"><div>DELAYED</div><div id="delaySecs">6.0s</div></div>
+        <div class="banner-track"><div class="banner-fill" id="delayFill"></div></div>
+        <div class="banner-cap">He has been shown to a private room.</div>
+      </div>
+
+      <div id="pickupFlash">+3 PAGES</div>
+
+      <div id="hints">
+        <div>&#9664; swipe</div><div>&#9650; jump</div><div>swipe &#9654;</div>
+      </div>
+    </div>
+
+    <!-- ── 2c · caught ── -->
+    <div id="caught" class="screen hidden">
+      <div class="caught-wash"></div>
+      <div class="caught-rule"></div>
+
+      <div class="caught-head">
+        <div class="caught-title">CAUGHT</div>
+        <div class="caught-cap">The pages have been taken into custody.</div>
+      </div>
+
+      <div id="caughtRunner" class="sprite still"></div>
+      <div id="caughtPursuer" class="sprite still"></div>
+      <div class="drop d1"></div>
+      <div class="drop d2"></div>
+      <div class="drop d3"></div>
+
+      <div class="grid">
+        <div class="cell"><div class="k">DISTANCE</div><div class="v" id="rDist">0 M</div></div>
+        <div class="cell"><div class="k">PAGES KEPT</div><div class="v" id="rKept">0</div></div>
+        <div class="cell"><div class="k">PAGES LOST</div><div class="v red" id="rLost">0</div></div>
+        <div class="cell"><div class="k">BEST</div><div class="v dim" id="rBest">0 M</div></div>
+      </div>
+
+      <div class="actions">
+        <button class="btn-primary" id="again">RUN AGAIN</button>
+        <div class="row">
+          <button class="btn-ghost" id="share">Share</button>
+          <button class="btn-ghost" id="openBoard">Leaderboard</button>
+        </div>
+      </div>
+      <div class="rank" id="rank">Your best run yet</div>
+    </div>
+
+    <!-- ── 2d · title ── -->
+    <div id="title" class="screen hidden">
+      <div class="title-wash"></div>
+      <div class="title-head">
+        <div class="title-logo">FILES<br>RUN</div>
+        <div class="title-cap">An endless runner about document custody.</div>
+      </div>
+      <div id="titleRunner" class="sprite"><i></i></div>
+      <div id="titlePursuer" class="sprite"><i></i></div>
+      <div class="title-cta"><button class="btn-primary" id="start">TAP TO RUN</button></div>
+      <div class="title-menu">
+        <button class="link" id="titleBoard">Leaderboard</button>
+        <button class="link" id="sound">Sound: on</button>
+        <button class="link" id="howto">How to play</button>
+      </div>
+      <div class="title-foot" id="titleFoot">HI 0 m &middot; 0 pages delivered</div>
+    </div>
+
+    <!-- ── local leaderboard ── -->
+    <div id="board" class="screen hidden">
+      <div class="board-wash"></div>
+      <div class="board-head">
+        <button class="link back" id="boardBack">&#9664; Back</button>
+        <div class="board-title">LEADERBOARD</div>
+        <div class="board-sub">Your runs on this device</div>
+      </div>
+      <div class="board-list" id="boardList"></div>
+      <div class="board-foot">Beat your best</div>
+    </div>
+
+    <!-- ── how to play ── -->
+    <div id="howtoPanel" class="screen hidden">
+      <div class="board-wash"></div>
+      <div class="board-head">
+        <button class="link back" id="howtoBack">&#9664; Back</button>
+        <div class="board-title">HOW TO PLAY</div>
+      </div>
+      <div class="howto-body">
+        <p><b>Swipe left / right</b> to change lane. <b>Swipe up</b> to jump. Arrow keys and space work too.</p>
+        <p><b>Obstacles</b> scatter what you are carrying &mdash; every turnstile, cart and gate costs you pages and lets him close.</p>
+        <p><b>Loose pages</b> on the floor go back into the folder.</p>
+        <p><b>Doorways</b> open in the outer lanes. Run through one and he gets shown to a private room for six seconds while you double your speed.</p>
+        <p>The proximity bar is the clock. When it fills, he has you.</p>
+      </div>
+    </div>
+
+    <!-- ── loading ── -->
+    <div id="loading" class="screen">
+      <div class="load-logo">FILES<br>RUN</div>
+      <div class="load-track"><div class="load-fill" id="loadFill"></div></div>
+      <div class="load-state" id="loadState">Unsealing</div>
+      <div class="load-cap">Obstacles scatter what you are carrying.</div>
+    </div>
+
+    <div id="bezel"></div>
+  </div>
+</div>
+
+<script src="game.js"></script>
+</body>
+</html>
