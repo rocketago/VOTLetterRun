@@ -30,6 +30,24 @@ the runner stands. Replacing the plate means re-measuring both.
 The plate is bright at the far end and pale underfoot, so the HUD sits on
 scrims (`#scrimTop`, `#scrimBottom`) rather than directly on the art.
 
+`assets/bg_aisle_floor.png` is the floor on its own, with alpha, on the same
+canvas. It is the layer that scrolls. Its transverse tile seams are spaced
+**geometrically** below its vanishing point — each seam sits `FLOOR_RATIO`
+(1.2816) further out than the last — which is what makes the loop possible:
+scaling the plate by exactly that ratio puts every seam where the next one
+was. Scaling about the vanishing point also leaves every line *through* that
+point untouched, so the lane lines stay put while only the seams move, which
+is exactly what walking down an aisle looks like.
+
+Two copies run half a cycle apart with `sin²`/`cos²` opacities, so they sum to
+1 and whichever layer is about to jump is invisible when it does. Its top edge
+was feathered over 70px so the far end dissolves into the plate underneath
+rather than showing a moving boundary.
+
+If this art is regenerated, keep the seams geometric and re-measure the ratio.
+Evenly spaced seams — what a real tiled floor would have — cannot loop this
+way.
+
 ## The runner: one file per frame
 
 The runner is **not** a sprite sheet — each pose is its own file, so a single

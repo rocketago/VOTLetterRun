@@ -23,6 +23,9 @@ python3 -m http.server 8000     # then open http://localhost:8000
 - **Three lanes, and nothing else.** Changing lane is the only move. The
   runner sits at a fixed depth; everything else travels toward the camera on
   the lane it spawned in.
+- **The floor scrolls.** Two copies of the floor plate scale about its
+  vanishing point, half a cycle apart, so the tile seams march toward the
+  camera at the runner's own speed while the lane lines stay fixed.
 - **Bags** are the score you carry. Loose bags on the floor add three each.
 - **Recalled food** — 54 types — costs you about a quarter of your armful and
   lets him close. Change lane or wear it.

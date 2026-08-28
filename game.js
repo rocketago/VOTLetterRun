@@ -71,6 +71,16 @@ const RUNG_GAP     = 0.55;
 // Sizes are the sprite's size at the runner's depth (z = 1); perspective does the rest.
 // The runner is one file per frame, so a single pose can be redrawn and
 // dropped in on its own. Bump RUNNER_FRAMES if the cycle gains or loses one.
+// The floor plate's tile seams are spaced geometrically below its vanishing
+// point, by this ratio. Scaling the plate by exactly this puts every seam
+// where the next one was, so the loop closes.
+const FLOOR_RATIO = 1.2816;
+// One cycle advances the floor by one tile row, i.e. multiplies depth by
+// FLOOR_RATIO. Entities move through depth linearly, so the two can only agree
+// at one depth; matching them at the runner's own depth puts the tiles under
+// his feet at exactly his speed, which is where the eye judges it.
+const FLOOR_CYCLES_PER_Z = 1 / Math.log(FLOOR_RATIO);
+
 const RUNNER_FRAMES = 8;
 const RUNNER_FRAME_MS = 78;          // ~12.8 fps
 const RUNNER_FRAME_MS_FAST = 52;     // while Tylenol is up
@@ -100,7 +110,7 @@ const CHIP_BAGS = ['chips', 'chipsB', 'chipsG'];
 OBSTACLE_ART.forEach(([n, w, h]) => { SPRITES[n] = { img: n + '.png', w, h }; });
 
 const ASSETS = [
-  'assets/bg_aisle.jpg',
+  'assets/bg_aisle.jpg', 'assets/bg_aisle_floor.png',
   'assets/pursuer_run.png',
   'assets/pickup_chips.png', 'assets/pickup_chips_b.png', 'assets/pickup_chips_g.png',
   'assets/chip_drop.png',
@@ -170,6 +180,7 @@ const el = {
   runner: $('runner'), pursuer: $('pursuer'), labelTag: $('labelTag'),
   speedTag: $('speedTag'), vignette: $('vignette'), flash: $('flash'),
   hud: $('hud'), prox: document.querySelector('.prox'), proxFill: $('proxFill'), proxState: $('proxState'),
+  floorA: $('floorA'), floorB: $('floorB'),
   bags: $('bags'), lives: $('lives'), dist: $('dist'), hiSmall: $('hiSmall'),
   delay: $('delay'), delaySecs: $('delaySecs'), delayFill: $('delayFill'),
   pickupFlash: $('pickupFlash'), hints: $('hints'),
@@ -244,6 +255,7 @@ const g = {
   prox: PROX_START, meters: 0, bags: BAGS_START, lost: 0,
   pursuerX: STAGE_W / 2,
   nextObs: 0, nextPickup: 0, nextRung: 0,
+  floorPhase: 0,
   labelAt: 0, labelUntil: 0,
   lives: 0, vaxAt: 0,
   tylAt: 0, powerUntil: 0,
@@ -257,7 +269,7 @@ function resetRun() {
     t: 0, odo: 0, speed: SPEED_BASE, lane: 0, laneX: STAGE_W / 2, invuln: 0,
     prox: PROX_START, meters: 0, bags: BAGS_START, lost: 0, pursuerX: STAGE_W / 2,
     nextObs: 1.2, nextPickup: 2.4, nextRung: 0,
-    labelAt: rand(LABEL_EVERY), labelUntil: 0,
+    floorPhase: 0, labelAt: rand(LABEL_EVERY), labelUntil: 0,
     lives: 0, vaxAt: VAX_FIRST,
     tylAt: TYL_FIRST, powerUntil: 0,
   });
@@ -482,6 +494,7 @@ function step(dt) {
   g.speed = SPEED_BASE + (SPEED_MAX - SPEED_BASE) * Math.min(1, g.t / SPEED_RAMP);
   const eff = g.speed * (power ? 2 : 1);
   g.odo += eff * dt;
+  g.floorPhase = (g.floorPhase + eff * FLOOR_CYCLES_PER_Z * dt) % 1;
   g.meters += eff * dt * METERS_PER_Z;
 
   // ── proximity
@@ -573,7 +586,18 @@ function step(dt) {
   }
 }
 
+// Advance the two floor layers. Phase 0..1 is one tile row.
+function renderFloor(p) {
+  const q = (p + 0.5) % 1;
+  const w = Math.sin(Math.PI * p);
+  el.floorA.style.transform = 'scale(' + Math.pow(FLOOR_RATIO, p).toFixed(4) + ')';
+  el.floorB.style.transform = 'scale(' + Math.pow(FLOOR_RATIO, q).toFixed(4) + ')';
+  el.floorA.style.opacity = (w * w).toFixed(3);
+  el.floorB.style.opacity = (1 - w * w).toFixed(3);
+}
+
 function render(dt) {
+  renderFloor(g.floorPhase);
   // runner — leans into the lane change, which is the only move he has
   const leanX = (STAGE_W / 2 + g.lane * LANE_X) - g.laneX;
   el.runner.style.transform = 'translate(' + (g.laneX - 29).toFixed(1) + 'px, 436px) rotate(' +
@@ -696,6 +720,7 @@ function preload() {
 }
 
 function ready() {
+  renderFloor(0);
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(fit);
   toTitle();
   raf = requestAnimationFrame(frame);

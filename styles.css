@@ -111,6 +111,20 @@ body.framed #bezel {
   background: linear-gradient(0deg, rgba(8, 10, 14, .78), rgba(8, 10, 14, 0));
 }
 
+/* The scrolling floor. Two copies of the same plate, half a cycle apart,
+   each scaled about the floor's own vanishing point. Scaling about that point
+   leaves every line through it — the lane lines — exactly where it is, and
+   marches the transverse tile seams toward the camera, which is precisely what
+   moving down the aisle looks like. Their opacities are sin^2 and cos^2 of the
+   same phase, so they sum to 1 and each one is invisible at the moment it
+   jumps back. */
+.floor-scroll {
+  position: absolute; inset: 0;
+  background: url('assets/bg_aisle_floor.png') center / cover no-repeat;
+  transform-origin: 194px 297px;
+  will-change: transform, opacity;
+}
+
 #world { position: absolute; inset: 0; }
 
 /* Travelling entities: sized at their runner-depth size, scaled by perspective. */
