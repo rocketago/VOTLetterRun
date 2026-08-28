@@ -115,6 +115,20 @@ def melon():
     save(im, "obs_melon.png")
 
 
+def tylenol():
+    """Tylenol: a white bottle with a red cap and a red band."""
+    im = canvas(20, 24)
+    d = ImageDraw.Draw(im)
+    box(d, 6, 2, 8, 3, RED)                   # cap
+    box(d, 7, 5, 6, 1, (150, 36, 26))         # neck
+    box(d, 5, 6, 10, 15, CREAM)               # bottle
+    box(d, 5, 10, 10, 4, RED)                 # label band
+    box(d, 7, 11, 6, 1, CREAM)
+    box(d, 7, 13, 4, 1, CREAM)
+    box(d, 6, 7, 1, 3, (255, 255, 255))       # highlight
+    save(im, "pickup_tylenol.png")
+
+
 def vax():
     """The booster: a syringe, drawn on the diagonal so it reads at 26px."""
     im = canvas(20, 24)
@@ -131,4 +145,4 @@ def vax():
 
 if __name__ == "__main__":
     os.makedirs(OUT, exist_ok=True)
-    chips_bag(); chip(); lettuce(); beef(); melon(); vax()
+    chips_bag(); chip(); lettuce(); beef(); melon(); vax(); tylenol()

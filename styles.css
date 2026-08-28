@@ -12,6 +12,7 @@
   --slate-dim:   #6B7788;
   --slate-lit:   #B7C1D1;
   --amber:       #F2A93B;
+  --blue:        #6EA8D6;
   --red:         #D8402F;
   --green:       #9AC46A;
   --ink:         #14120F;
@@ -106,8 +107,9 @@ body.framed #bezel {
 .ent.rung { background: linear-gradient(90deg, rgba(242,169,59,0), rgba(242,169,59,.30), rgba(242,169,59,0)); }
 
 /* Pickups: the bag you want, and the booster that buys you six seconds. */
-.ent.vax > i { animation: bob .8s ease-in-out infinite; }
+.ent.vax > i, .ent.tyl > i { animation: bob .8s ease-in-out infinite; }
 .ent.vax { filter: drop-shadow(0 0 6px rgba(110, 168, 214, .75)); }
+.ent.tyl { filter: drop-shadow(0 0 6px rgba(242, 169, 59, .75)); }
 
 /* Runner — fixed screen depth, mockup 2a: top 300, 54 x 88. */
 #runner { left: 0; top: 0; width: 54px; height: 88px; }
@@ -184,6 +186,12 @@ body.framed #bezel {
 .stat .lab { position: absolute; top: 21px; font-size: 9px; letter-spacing: .12em; color: var(--slate); white-space: nowrap; }
 .stat-l .lab { left: 0; }
 .stat-r .lab { right: 0; }
+.stat .lives { position: absolute; top: 38px; left: 0; display: flex; gap: 4px; }
+.stat .lives i {
+  display: block; width: 7px; height: 11px;
+  background: var(--blue, #6EA8D6);
+  box-shadow: 0 0 5px rgba(110, 168, 214, .8);
+}
 
 /* 2b · power-up banner */
 .banner {

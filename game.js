@@ -48,8 +48,13 @@ const INVULN_MS    = 700;            // grace period after a hit
 
 const LABEL_EVERY  = [4, 9];         // he stops to read an ingredients label
 const LABEL_MS     = 1650;
-const VAX_FIRST    = 16;             // first booster on the shelf
-const VAX_EVERY    = [20, 30];
+const VAX_FIRST    = 18;             // a dose: banks an extra life
+const VAX_EVERY    = [26, 40];
+const MAX_LIVES    = 3;
+const PROX_AFTER_DOSE = 0.42;        // where a spent dose puts him back to
+
+const TYL_FIRST    = 12;             // Tylenol: six seconds at double speed
+const TYL_EVERY    = [18, 28];
 const POWERUP_MS   = 6000;
 
 const OBS_GAP      = [1.7, 2.9];     // z units between obstacles, early
@@ -64,7 +69,8 @@ const SPRITES = {
   melon:   { img: 'obs_melon.png',    w: 52, h: 41.2 },   // recalled cantaloupe
   chips:   { img: 'pickup_chips.png', w: 28, h: 24.5 },   // the bag you are here for
   crumb:   { img: 'chip_drop.png',    w: 22, h: 26.9 },   // spills out of the armful
-  vax:     { img: 'pickup_vax.png',   w: 25, h: 30 },     // the booster
+  vax:     { img: 'pickup_vax.png',     w: 25, h: 30 },   // a dose: one extra life
+  tyl:     { img: 'pickup_tylenol.png', w: 25, h: 30 },   // Tylenol: double speed
 };
 const OBSTACLES = ['lettuce', 'beef', 'melon'];
 
@@ -72,7 +78,8 @@ const ASSETS = [
   'assets/bg_floor.jpg', 'assets/bg_walls.jpg',
   'assets/runner_run.png', 'assets/pursuer_run.png',
   'assets/obs_lettuce.png', 'assets/obs_beef.png', 'assets/obs_melon.png',
-  'assets/pickup_chips.png', 'assets/chip_drop.png', 'assets/pickup_vax.png',
+  'assets/pickup_chips.png', 'assets/chip_drop.png',
+  'assets/pickup_vax.png', 'assets/pickup_tylenol.png',
 ];
 
 /* ────────────────────────────────────────────────────────── helpers */
@@ -124,6 +131,8 @@ const sfx = (() => {
     hit()     { tone(180, 0.32, 'sawtooth', 0.10, 60); },
     caught()  { tone(140, 0.9, 'sawtooth', 0.12, 44); },
     power()   { [523, 659, 784, 1046].forEach((f, i) => setTimeout(() => tone(f, 0.14, 'square', 0.06), i * 80)); },
+    dose()    { [392, 523, 659].forEach((f, i) => setTimeout(() => tone(f, 0.2, 'triangle', 0.07), i * 110)); },
+    save()    { [880, 660, 880, 1175].forEach((f, i) => setTimeout(() => tone(f, 0.22, 'square', 0.08), i * 130)); },
   };
 })();
 
@@ -134,7 +143,7 @@ const el = {
   runner: $('runner'), pursuer: $('pursuer'), labelTag: $('labelTag'),
   speedTag: $('speedTag'), vignette: $('vignette'), flash: $('flash'),
   hud: $('hud'), prox: document.querySelector('.prox'), proxFill: $('proxFill'), proxState: $('proxState'),
-  bags: $('bags'), dist: $('dist'), hiSmall: $('hiSmall'),
+  bags: $('bags'), lives: $('lives'), dist: $('dist'), hiSmall: $('hiSmall'),
   delay: $('delay'), delaySecs: $('delaySecs'), delayFill: $('delayFill'),
   pickupFlash: $('pickupFlash'), hints: $('hints'),
   title: $('title'), caught: $('caught'), board: $('board'), howtoPanel: $('howtoPanel'), loading: $('loading'),
@@ -209,7 +218,8 @@ const g = {
   pursuerX: STAGE_W / 2,
   nextObs: 0, nextPickup: 0, nextRung: 0,
   labelAt: 0, labelUntil: 0,
-  vaxAt: 0, powerUntil: 0,
+  lives: 0, vaxAt: 0,
+  tylAt: 0, powerUntil: 0,
   best: store.get('best', 0), eaten: store.get('eaten', 0),
 };
 
@@ -221,8 +231,10 @@ function resetRun() {
     prox: PROX_START, meters: 0, bags: BAGS_START, lost: 0, pursuerX: STAGE_W / 2,
     nextObs: 1.2, nextPickup: 2.4, nextRung: 0,
     labelAt: rand(LABEL_EVERY), labelUntil: 0,
-    vaxAt: VAX_FIRST, powerUntil: 0,
+    lives: 0, vaxAt: VAX_FIRST,
+    tylAt: TYL_FIRST, powerUntil: 0,
   });
+  renderLives();
   el.runner.classList.remove('fast', 'stumble', 'hit');
   el.delay.classList.remove('on');
   el.speedTag.style.display = 'none';
@@ -370,11 +382,41 @@ function collect() {
   g.bags += BAGS_PICKUP;
   g.prox = clamp(g.prox - PROX_PICKUP, 0, 1);
   sfx.pickup();
-  el.pickupFlash.textContent = '+' + BAGS_PICKUP + ' BAGS';
+  flash('+' + BAGS_PICKUP + ' BAGS');
+}
+
+// A dose banks an extra life. He does not approve, which is the point.
+function takeDose() {
+  if (g.lives >= MAX_LIVES) { collect(); return; }   // full up: count it as snacks
+  g.lives++;
+  renderLives();
+  sfx.dose();
+  flash('+1 DOSE');
+}
+
+// Spent automatically the moment he would have had you.
+function spendDose() {
+  g.lives--;
+  renderLives();
+  g.prox = PROX_AFTER_DOSE;
+  g.invuln = INVULN_MS * 2;
+  sfx.save();
+  flash('IMMUNISED');
+  el.flash.classList.remove('on'); void el.flash.offsetWidth; el.flash.classList.add('on');
+}
+
+function renderLives() {
+  el.lives.innerHTML = g.lives
+    ? Array.from({ length: g.lives }, () => '<i></i>').join('')
+    : '';
+}
+
+function flash(msg) {
+  el.pickupFlash.textContent = msg;
   el.pickupFlash.classList.remove('on'); void el.pickupFlash.offsetWidth; el.pickupFlash.classList.add('on');
 }
 
-// The booster: six seconds at double speed, and he drops a long way back.
+// Tylenol: six seconds at double speed, and he drops a long way back.
 function powerUp() {
   g.powerUntil = g.t * 1000 + POWERUP_MS;
   g.prox = Math.min(g.prox, PROX_POWERUP);
@@ -384,8 +426,7 @@ function powerUp() {
   el.delay.classList.add('on');
   el.runner.classList.add('fast');
   el.speedTag.style.display = 'block';
-  el.pickupFlash.textContent = 'BOOSTED';
-  el.pickupFlash.classList.remove('on'); void el.pickupFlash.offsetWidth; el.pickupFlash.classList.add('on');
+  flash('TYLENOL');
 }
 
 function endPowerUp() {
@@ -457,11 +498,17 @@ function step(dt) {
       spawn('pickup', { img: sp.img, w: sp.w, h: sp.h, lane: pick(free) });
     }
   }
-  // ── the booster, on a shelf in any lane
-  if (g.t >= g.vaxAt && !g.powerUntil && !ents.some((e) => e.kind === 'vax')) {
+  // ── a dose, on a shelf in any lane; skipped while you are already full up
+  if (g.t >= g.vaxAt && g.lives < MAX_LIVES && !ents.some((e) => e.kind === 'vax')) {
     g.vaxAt = g.t + rand(VAX_EVERY);
     const sp = SPRITES.vax;
     spawn('vax', { img: sp.img, w: sp.w, h: sp.h, lane: (Math.random() * 3 | 0) - 1 });
+  }
+  // ── Tylenol
+  if (g.t >= g.tylAt && !g.powerUntil && !ents.some((e) => e.kind === 'tyl')) {
+    g.tylAt = g.t + rand(TYL_EVERY);
+    const sp = SPRITES.tyl;
+    spawn('tyl', { img: sp.img, w: sp.w, h: sp.h, lane: (Math.random() * 3 | 0) - 1 });
   }
 
   // ── he stops to read a label: random 4–9 s, costs him ~1.5 s of ground
@@ -483,7 +530,8 @@ function step(dt) {
       if (e.lane === g.lane) {
         if (e.kind === 'obs') hit();
         else if (e.kind === 'pickup') { collect(); kill(e); ents.splice(i, 1); continue; }
-        else if (e.kind === 'vax') { powerUp(); kill(e); ents.splice(i, 1); continue; }
+        else if (e.kind === 'vax') { takeDose(); kill(e); ents.splice(i, 1); continue; }
+        else if (e.kind === 'tyl') { powerUp(); kill(e); ents.splice(i, 1); continue; }
       }
     }
 
@@ -492,7 +540,10 @@ function step(dt) {
   }
   ents = ents.filter((e) => !e.dead);
 
-  if (g.prox >= 1) { toCaught(); return; }
+  if (g.prox >= 1) {
+    if (g.lives > 0) spendDose();
+    else { toCaught(); return; }
+  }
 }
 
 function render(dt) {
