@@ -1,5 +1,5 @@
 /* Snack Run — cache-first service worker so a run survives a dead signal. */
-const CACHE = 'snackrun-v1';
+const CACHE = 'snackrun-v2';
 const SHELL = [
   './', './index.html', './styles.css', './game.js', './manifest.webmanifest',
   './assets/bg_floor.jpg', './assets/bg_walls.jpg',

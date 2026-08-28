@@ -112,7 +112,7 @@ body.framed #bezel {
 .ent.tyl { filter: drop-shadow(0 0 6px rgba(242, 169, 59, .75)); }
 
 /* Runner — fixed screen depth, mockup 2a: top 300, 54 x 88. */
-#runner { left: 0; top: 0; width: 54px; height: 88px; }
+#runner { left: 0; top: 0; width: 44px; height: 88px; }
 #runner > i {
   background-image: url('assets/runner_run.png');
   background-size: 800% 100%;
@@ -131,11 +131,11 @@ body.framed #bezel {
 
 /* Pursuer — nearest the camera. Base box is his size at proximity 0;
    mockup 2a shows him at 119 x 190 / bottom 74 with the meter at 62%. */
-#pursuer { left: 0; top: 0; width: 130px; height: 208px; }
+#pursuer { left: 0; top: 0; width: 101px; height: 208px; }
 #pursuer > i {
   background-image: url('assets/pursuer_run.png');
-  background-size: 700% 100%;
-  animation: sheet .78s steps(7, jump-none) infinite;
+  background-size: 800% 100%;
+  animation: sheet .78s steps(8, jump-none) infinite;
 }
 
 #labelTag {
@@ -244,13 +244,13 @@ body.framed #bezel {
 .caught-cap { font-family: var(--serif); font-style: italic; font-size: 14px; color: var(--slate-lit); margin-top: 16px; }
 
 #caughtRunner {
-  left: 195px; top: 156px; transform: translateX(-50%); width: 45px; height: 74px;
+  left: 195px; top: 156px; transform: translateX(-50%); width: 37px; height: 74px;
   background-image: url('assets/runner_run.png'); background-size: 800% 100%;
 }
 #caughtPursuer {
-  left: 195px; top: 272px; transform: translateX(-50%); width: 106px; height: 170px;
-  background-image: url('assets/pursuer_run.png'); background-size: 700% 100%;
-  background-position-x: 50%;
+  left: 195px; top: 272px; transform: translateX(-50%); width: 82px; height: 170px;
+  background-image: url('assets/pursuer_run.png'); background-size: 800% 100%;
+  background-position-x: 28.571%;   /* frame 2 of 8 — mid-stride, tie flying */
 }
 .drop {
   position: absolute; background: url('assets/chip_drop.png') center / contain no-repeat;
@@ -310,13 +310,13 @@ button { font: inherit; border: 0; margin: 0; cursor: pointer; }
 .title-cap { font-family: var(--serif); font-style: italic; font-size: 14px; color: var(--slate-lit); margin-top: 20px; }
 
 #titleRunner {
-  left: 195px; top: 326px; transform: translateX(-50%); width: 48px; height: 78px;
+  left: 195px; top: 326px; transform: translateX(-50%); width: 39px; height: 78px;
 }
 #titleRunner > i { background-image: url('assets/runner_run.png'); background-size: 800% 100%; animation: sheet .62s steps(8, jump-none) infinite; }
 #titlePursuer {
-  left: 195px; bottom: 244px; transform: translateX(-50%); width: 108px; height: 172px;
+  left: 195px; bottom: 244px; transform: translateX(-50%); width: 83px; height: 172px;
 }
-#titlePursuer > i { background-image: url('assets/pursuer_run.png'); background-size: 700% 100%; animation: sheet .78s steps(7, jump-none) infinite; }
+#titlePursuer > i { background-image: url('assets/pursuer_run.png'); background-size: 800% 100%; animation: sheet .78s steps(8, jump-none) infinite; }
 
 .title-cta { position: absolute; left: 0; right: 0; bottom: 148px; text-align: center; }
 .title-cta .btn-primary { display: inline-block; width: auto; font-size: 14px; padding: 21px 36px 18px; }

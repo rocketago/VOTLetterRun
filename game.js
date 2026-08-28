@@ -64,21 +64,32 @@ const RUNG_GAP     = 0.55;
 
 // Sizes are the sprite's size at the runner's depth (z = 1); perspective does the rest.
 const SPRITES = {
-  lettuce: { img: 'obs_lettuce.png',  w: 52, h: 47.7 },   // recalled romaine
-  beef:    { img: 'obs_beef.png',     w: 54, h: 38.3 },   // recalled ground beef
-  melon:   { img: 'obs_melon.png',    w: 52, h: 41.2 },   // recalled cantaloupe
-  chips:   { img: 'pickup_chips.png', w: 28, h: 24.5 },   // the bag you are here for
-  crumb:   { img: 'chip_drop.png',    w: 22, h: 26.9 },   // spills out of the armful
-  vax:     { img: 'pickup_vax.png',     w: 25, h: 30 },   // a dose: one extra life
-  tyl:     { img: 'pickup_tylenol.png', w: 25, h: 30 },   // Tylenol: double speed
+  // The bags you are here for — one of three, picked per spawn.
+  chips:   { img: 'pickup_chips.png',   w: 28, h: 35.2 },
+  chipsB:  { img: 'pickup_chips_b.png', w: 28, h: 34.9 },
+  chipsG:  { img: 'pickup_chips_g.png', w: 26, h: 37.0 },
+  crumb:   { img: 'chip_drop.png',      w: 22, h: 26.9 },   // spills out of the armful
+  vax:     { img: 'pickup_vax.png',     w: 25, h: 30 },     // a dose: one extra life
+  tyl:     { img: 'pickup_tylenol.png', w: 25, h: 30 },     // Tylenol: double speed
 };
-const OBSTACLES = ['lettuce', 'beef', 'melon'];
+// 54 obstacle types. Placeholder art for now: one flat colour-coded square
+// each, drawn by tools/draw_obstacles.py. They all share a square footprint,
+// so a single size covers the set; real sprites can vary per type later.
+const OBSTACLE_COUNT = 54;
+const OBSTACLE_SIZE = 54;
+const OBSTACLE_ART = Array.from({ length: OBSTACLE_COUNT }, (_, i) => {
+  const n = 'obs_' + String(i + 1).padStart(2, '0');
+  return [n, OBSTACLE_SIZE, OBSTACLE_SIZE];
+});
+const OBSTACLES = OBSTACLE_ART.map(([n]) => n);
+const CHIP_BAGS = ['chips', 'chipsB', 'chipsG'];
+OBSTACLE_ART.forEach(([n, w, h]) => { SPRITES[n] = { img: n + '.png', w, h }; });
 
 const ASSETS = [
   'assets/bg_floor.jpg', 'assets/bg_walls.jpg',
   'assets/runner_run.png', 'assets/pursuer_run.png',
-  'assets/obs_lettuce.png', 'assets/obs_beef.png', 'assets/obs_melon.png',
-  'assets/pickup_chips.png', 'assets/chip_drop.png',
+  'assets/pickup_chips.png', 'assets/pickup_chips_b.png', 'assets/pickup_chips_g.png',
+  'assets/chip_drop.png',
   'assets/pickup_vax.png', 'assets/pickup_tylenol.png',
 ];
 
@@ -494,7 +505,7 @@ function step(dt) {
     const busy = ents.filter((e) => e.kind === 'obs' && e.z > Z_SPAWN - 0.8).map((e) => e.lane);
     const free = [-1, 0, 1].filter((l) => busy.indexOf(l) < 0);
     if (free.length) {
-      const sp = SPRITES.chips;
+      const sp = SPRITES[pick(CHIP_BAGS)];
       spawn('pickup', { img: sp.img, w: sp.w, h: sp.h, lane: pick(free) });
     }
   }
@@ -549,17 +560,17 @@ function step(dt) {
 function render(dt) {
   // runner — leans into the lane change, which is the only move he has
   const leanX = (STAGE_W / 2 + g.lane * LANE_X) - g.laneX;
-  el.runner.style.transform = 'translate(' + (g.laneX - 27).toFixed(1) + 'px, 300px) rotate(' +
+  el.runner.style.transform = 'translate(' + (g.laneX - 22).toFixed(1) + 'px, 300px) rotate(' +
     clamp(leanX * -0.06, -7, 7).toFixed(1) + 'deg)';
   el.speedTag.style.transform = 'translate(' + (g.laneX - 52).toFixed(1) + 'px, 292px)';
 
   // pursuer — closes on the runner as proximity fills (mockup 2a at 62%: bottom 74, 119 x 190)
-  const w = lerp(130, 112, g.prox);
-  const s = w / 130;
+  const w = lerp(101, 87, g.prox);
+  const s = w / 101;
   const bottom = lerp(30, 100, g.prox);
   g.pursuerX += ((STAGE_W / 2 + g.lane * LANE_X * 0.55) - g.pursuerX) * Math.min(1, dt * 3.2);
   const jitter = g.prox > 0.8 ? (Math.random() - 0.5) * (g.prox - 0.8) * 22 : 0;
-  const px = g.pursuerX - 65 + jitter;
+  const px = g.pursuerX - 50.5 + jitter;
   const py = STAGE_H - bottom - 208;
   el.pursuer.style.transform = 'translate(' + px.toFixed(1) + 'px,' + py.toFixed(1) + 'px) scale(' + s.toFixed(3) + ')';
   // The label-check beat sits just above his head.

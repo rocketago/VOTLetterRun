@@ -24,8 +24,8 @@ python3 -m http.server 8000     # then open http://localhost:8000
   runner sits at a fixed depth; everything else travels toward the camera on
   the lane it spawned in.
 - **Bags** are the score you carry. Loose bags on the floor add three each.
-- **Recalled food** — romaine, ground beef, cantaloupe — costs you about a
-  quarter of your armful and lets him close. Change lane or wear it.
+- **Recalled food** — 54 types — costs you about a quarter of your armful and
+  lets him close. Change lane or wear it.
 - **Proximity** fills over time and jumps on every hit. When it fills, he has
   you.
 - **He stops to read an ingredients label** on a random 4–9 s interval, which
@@ -35,11 +35,12 @@ python3 -m http.server 8000     # then open http://localhost:8000
 
 ## Art status
 
-The item sprites in `assets/` are placeholders drawn by
-`tools/draw_placeholders.py` — good enough to read, not final. The runner,
-the pursuer and the background are still the previous theme's art and need
-replacing. `ART-BRIEF.md` lists every file, size and frame count; drop real
-sprites in at those exact filenames and nothing in the code has to change.
+The runner, the pursuer and the three chip bags are real art. The 54 obstacles
+are colour-coded square placeholders from `tools/draw_obstacles.py`, and the
+two power-up pickups are drawn by `tools/draw_placeholders.py`. The background
+is still the previous theme's tunnel plate. `ART-BRIEF.md` lists every file,
+size and frame count; drop real sprites in at those filenames and nothing in
+the code has to change.
 
 ## Perspective
 
@@ -77,7 +78,9 @@ index.html  styles.css  game.js       the game
 sw.js  manifest.webmanifest           offline cache, add-to-home-screen
 assets/                               art, generated
 tools/build_assets.py                 repacks source sheets into assets/
-tools/draw_placeholders.py            the stand-in item sprites
+tools/draw_placeholders.py            stand-in power-up sprites
+tools/draw_obstacles.py               the 54 placeholder obstacle squares
+tools/slice_sheets.py                 cuts incoming sheets into named sprites
 ART-BRIEF.md                          what art is still needed, and at what size
 project/                              the original Claude Design source
 ```

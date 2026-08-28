@@ -21,33 +21,65 @@ Usage
 
 import argparse
 import os
+from collections import deque
 from PIL import Image, ImageDraw
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(ROOT, "assets")
 
-# Target cell for the run strip, matching what the CSS expects (2.4x display size).
-PURSUER_CELL = (253, 404)
+def dekey(im, tol=26, strict=10):
+    """Make the background transparent, flooding inward from the border.
 
-
-def dekey(im, tol=18):
-    """Drop a flat white/near-white background if the sheet has no alpha to start."""
+    Sheets often arrive flattened - a white backdrop, or the grey checkerboard
+    a transparent PNG shows in a preview. Both are keyed here. The flood starts
+    at the edges rather than keying by colour globally, so white hair
+    highlights and grey cookware *inside* a sprite survive.
+    """
     im = im.convert("RGBA")
     if im.getchannel("A").getextrema()[0] < 255:
         return im                                   # already has real transparency
-    px = im.load()
+
     w, h = im.size
+    px = im.load()
     corners = [px[0, 0], px[w - 1, 0], px[0, h - 1], px[w - 1, h - 1]]
-    if not all(c[0] > 255 - tol and c[1] > 255 - tol and c[2] > 255 - tol for c in corners):
-        return im                                   # background is not white, leave it
-    out = im.copy()
-    o = out.load()
+    bg = []
+    for c in corners:
+        if not any(abs(c[0] - b[0]) <= tol and abs(c[1] - b[1]) <= tol and abs(c[2] - b[2]) <= tol
+                   for b in bg):
+            bg.append(c[:3])
+
+    def is_bg(p):
+        return any(abs(p[0] - c[0]) <= tol and abs(p[1] - c[1]) <= tol and abs(p[2] - c[2]) <= tol
+                   for c in bg)
+
+    seen = bytearray(w * h)
+    q = deque()
+    def push(x, y):
+        if not seen[y * w + x] and is_bg(px[x, y]):
+            seen[y * w + x] = 1
+            q.append((x, y))
+    for x in range(w):
+        push(x, 0); push(x, h - 1)
     for y in range(h):
+        push(0, y); push(w - 1, y)
+    while q:
+        x, y = q.popleft()
+        for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+            nx, ny = x + dx, y + dy
+            if 0 <= nx < w and 0 <= ny < h:
+                push(nx, ny)
+    def near(p, c, t):
+        return abs(p[0] - c[0]) <= t and abs(p[1] - c[1]) <= t and abs(p[2] - c[2]) <= t
+
+    for y in range(h):
+        row = y * w
         for x in range(w):
-            r, g, b, _ = px[x, y]
-            if r > 255 - tol and g > 255 - tol and b > 255 - tol:
-                o[x, y] = (r, g, b, 0)
-    return out
+            p = px[x, y]
+            # Border-connected background, or a pocket of it walled in by the art
+            # (the hole in a ring of sausages), which the flood cannot reach.
+            if seen[row + x] or any(near(p, c, strict) for c in bg):
+                px[x, y] = (p[0], p[1], p[2], 0)
+    return im
 
 
 def cells(im, cols, rows):
@@ -72,7 +104,7 @@ def contact_sheet(tiles, path, cols):
 
 
 def do_food(args):
-    im = dekey(Image.open(args.sheet))
+    im = dekey(Image.open(args.sheet), tol=args.tol)
     tiles = []
     for cell in cells(im, args.cols, args.rows):
         bbox = cell.getbbox()
@@ -96,15 +128,18 @@ def do_pursuer(args):
     right = max(b[2] for b in boxes if b)
     top = min(b[1] for b in boxes if b)
     bottom = max(b[3] for b in boxes if b)
-    cw, ch = PURSUER_CELL
+    cw, ch = (args.cell if args.cell else (right - left, bottom - top))
     sheet = Image.new("RGBA", (cw * args.frames, ch), (0, 0, 0, 0))
     for i, f in enumerate(raw):
-        cell = f.crop((left, top, right, bottom)).resize((cw, ch), Image.LANCZOS)
+        cell = f.crop((left, top, right, bottom))
+        if (cell.width, cell.height) != (cw, ch):
+            cell = cell.resize((cw, ch), Image.LANCZOS)
         sheet.paste(cell, (i * cw, 0))
     sheet.save(os.path.join(OUT, args.name + ".png"), optimize=True)
     print(f"{args.name+'.png':22} {sheet.size[0]:4}x{sheet.size[1]:<4}  {args.frames} frames")
-    print(f"  -> set the sheet's background-size to {args.frames * 100}% 100% and "
-          f"steps({args.frames}, jump-none) in styles.css")
+    print(f"  cell {cw} x {ch}, aspect {cw / ch:.3f}")
+    print(f"  -> background-size {args.frames * 100}% 100%, steps({args.frames}, jump-none)")
+    print(f"  -> a display box {ch and round(208 * cw / ch)} x 208 keeps the aspect")
 
 
 if __name__ == "__main__":
@@ -116,6 +151,7 @@ if __name__ == "__main__":
     f.add_argument("--cols", type=int, default=9)
     f.add_argument("--rows", type=int, default=6)
     f.add_argument("--contact")
+    f.add_argument("--tol", type=int, default=26)
     f.add_argument("--pick", nargs="*", default=[], metavar="INDEX=NAME")
     f.set_defaults(fn=do_food)
 
@@ -123,6 +159,8 @@ if __name__ == "__main__":
     p.add_argument("sheet")
     p.add_argument("--frames", type=int, default=8)
     p.add_argument("--name", default="pursuer_run")
+    p.add_argument("--cell", type=int, nargs=2, metavar=("W", "H"),
+                   help="resize each frame to this cell; default keeps the trimmed size")
     p.set_defaults(fn=do_pursuer)
 
     a = ap.parse_args()

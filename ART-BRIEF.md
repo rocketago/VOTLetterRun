@@ -13,10 +13,16 @@ uniform, feet-aligned cells.
 
 | File | Size 1× | Frames | What it is |
 | --- | --- | --- | --- |
-| `runner_run.png` | 64 × 78 | 8 | Back view, running away up the aisle, mid-stride cycle. Arms full of chip bags — drawn in three thickness tiers (full / half / thin) so the armful visibly depletes. |
-| `pursuer_run.png` | 116 × 166 | 8 | The Secretary, back view, running toward the camera. Biggest sprite in the game — nothing finer than 2 px, since he scales from about 0.85× to 1×. |
+| `obs_01.png` … `obs_54.png` | 54 × 54 | 1 | The 54 obstacle types. Currently flat colour-coded squares from `tools/draw_obstacles.py`. Real sprites can be any aspect — set the per-type size in `OBSTACLE_ART` in `game.js` when they land. |
 | `bg_aisle_floor.png` | 390 × 844 | tiling | Supermarket aisle floor: three lanes converging on a vanishing point at top centre, linoleum, seamless vertically. Replaces `bg_floor.jpg`. |
 | `bg_aisle_shelves.png` | 390 × 844 | tiling | The same aisle seen with shelving down both sides, for the title screen. Replaces `bg_walls.jpg`. |
+
+## In place
+
+`runner_run.png` (8 frames, 114 × 228 cells) and `pursuer_run.png` (8 frames,
+217 × 448 cells) are the real art, sliced with `tools/slice_sheets.py`. Both
+display boxes were narrowed to match their aspect: the runner is 44 × 88 at
+the runner's depth, the pursuer 101 × 208 at his base size.
 
 One note on the pursuer: he is *between the camera and the runner*, so as he closes on
 the runner he moves **up** the frame and gets slightly smaller — he is at his
@@ -48,25 +54,24 @@ These work and are readable, but they were drawn in code by
 
 | File | Size 1× | Frames | What it is |
 | --- | --- | --- | --- |
-| `pickup_chips.png` | 28 × 24.5 | 1 | A bag of chips on the floor. Bright against the aisle. Bobs in place. |
+| `pickup_chips.png` / `_b` / `_g` | 28 × 35 | 1 | Three chip bags, one picked per spawn. These are real art, cut from the food sheet. |
 | `chip_drop.png` | 22 × 26.9 | 1 | A single chip, tumbling toward the camera. Spawned 6–14 at a time on a hit. |
-| `obs_lettuce.png` | 52 × 47.7 | 1 | Recalled romaine. |
-| `obs_beef.png` | 54 × 38.3 | 1 | Recalled ground beef in a tray. |
-| `obs_melon.png` | 52 × 41.2 | 1 | Recalled cantaloupe. |
 | `pickup_vax.png` | 25 × 30 | 1 | A dose — a syringe. Banks an extra life. Carries a soft blue glow in CSS, so the sprite itself does not need one. |
 | `pickup_tylenol.png` | 25 × 30 | 1 | Tylenol — a pill bottle. Six seconds at double speed. Amber glow in CSS. |
 
-The three obstacles share a footprint and must silhouette clearly against the
-floor. Sizes above are the sprite's size **at the runner's depth**; the
-perspective scales them from about 0.24× at spawn to 2.4× as they pass the
-camera, so author with headroom.
+Sizes above are the sprite's size **at the runner's depth**; the perspective
+scales everything from about 0.24× at spawn to 2.4× as it passes the camera,
+so author with headroom.
 
-## No longer used
+`tools/food_sheet_map.txt` holds the cell-index to name mapping for the 9 × 6
+food item sheet, if that art gets used for the obstacles later — one command
+re-cuts all 50 items.
 
-`distraction.png`, `door_open.png`, `door_shut.png` and `gas.png` are left over
-from the previous theme. The doorway power-up was replaced by the booster
-pickup and the gas effect by a text beat, so nothing loads them — they can be
-deleted once you are sure the theme is settled.
+## Gone
+
+The previous theme's `distraction.png`, `door_open.png`, `door_shut.png`,
+`gas.png`, `pickup_pages.png`, `page_drop.png` and the three subway obstacles
+have been deleted — nothing loads them any more.
 
 ## Palette
 

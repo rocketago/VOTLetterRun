@@ -1,0 +1,56 @@
+# Cell index -> sprite name for the 9 x 6 food item sheet.
+# Cells 16, 17 and 18 are the chip bags (pickups, already in assets/).
+# Cell 53 is empty.
+#
+#   python3 tools/slice_sheets.py food SHEET.png --pick $(grep -v '^#' tools/food_sheet_map.txt | tr '\n' ' ')
+#
+0=obs_bacon
+1=obs_steak
+2=obs_tofu_feta
+3=obs_breakfast_burrito
+4=obs_brie
+5=obs_buttermilk
+6=obs_whole_fish
+7=obs_cauliflower
+8=obs_swiss
+9=obs_wrap
+10=obs_noodle_soup
+11=obs_shrimp_wrap
+12=obs_roast_ham
+13=obs_cucumber
+14=obs_milk_jug
+15=obs_deli_meat
+19=obs_eggs
+20=obs_mackerel
+21=obs_berries
+22=obs_blueberries
+23=obs_smoothie
+24=obs_frozen_veg
+25=obs_bread
+26=obs_ground_beef
+27=obs_pasta_salad
+28=obs_cabbage
+29=obs_formula
+30=obs_peppers
+31=obs_pie
+32=obs_sauce_pot
+33=obs_spaghetti
+34=obs_sandwich
+35=obs_pizza
+36=obs_pesto
+37=obs_pork_chops
+38=obs_tofu
+39=obs_powdered_milk
+40=obs_tv_dinner
+41=obs_prosciutto
+42=obs_quiche
+43=obs_chicken
+44=obs_salmon
+45=obs_ham_hock
+46=obs_sausage_ring
+47=obs_sausages
+48=obs_cheese_wheel
+49=obs_spinach
+50=obs_bacon_strips
+51=obs_burrito
+52=obs_bean_soup
