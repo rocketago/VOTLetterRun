@@ -63,6 +63,14 @@ const PICKUP_GAP   = [1.1, 2.3];
 const RUNG_GAP     = 0.55;
 
 // Sizes are the sprite's size at the runner's depth (z = 1); perspective does the rest.
+// The runner is one file per frame, so a single pose can be redrawn and
+// dropped in on its own. Bump RUNNER_FRAMES if the cycle gains or loses one.
+const RUNNER_FRAMES = 8;
+const RUNNER_FRAME_MS = 78;          // ~12.8 fps
+const RUNNER_FRAME_MS_FAST = 52;     // while Tylenol is up
+const RUNNER_SRC = Array.from({ length: RUNNER_FRAMES },
+  (_, i) => 'assets/runner_' + String(i + 1).padStart(2, '0') + '.png');
+
 const SPRITES = {
   // The bags you are here for — one of three, picked per spawn.
   chips:   { img: 'pickup_chips.png',   w: 28, h: 35.2 },
@@ -87,11 +95,13 @@ OBSTACLE_ART.forEach(([n, w, h]) => { SPRITES[n] = { img: n + '.png', w, h }; })
 
 const ASSETS = [
   'assets/bg_floor.jpg', 'assets/bg_walls.jpg',
-  'assets/runner_run.png', 'assets/pursuer_run.png',
+  'assets/pursuer_run.png',
   'assets/pickup_chips.png', 'assets/pickup_chips_b.png', 'assets/pickup_chips_g.png',
   'assets/chip_drop.png',
   'assets/pickup_vax.png', 'assets/pickup_tylenol.png',
-];
+]
+  .concat(RUNNER_SRC)
+  .concat(OBSTACLE_ART.map(([n]) => 'assets/' + n + '.png'));
 
 /* ────────────────────────────────────────────────────────── helpers */
 
@@ -159,7 +169,7 @@ const el = {
   pickupFlash: $('pickupFlash'), hints: $('hints'),
   title: $('title'), caught: $('caught'), board: $('board'), howtoPanel: $('howtoPanel'), loading: $('loading'),
   rDist: $('rDist'), rKept: $('rKept'), rLost: $('rLost'), rBest: $('rBest'), rank: $('rank'),
-  titleFoot: $('titleFoot'), boardList: $('boardList'),
+  titleRunner: $('titleRunner'), titleFoot: $('titleFoot'), boardList: $('boardList'),
   loadFill: $('loadFill'), loadState: $('loadState'),
 };
 
@@ -597,11 +607,29 @@ function render(dt) {
   }
 }
 
+// Swap the runner's frame file. Driven off wall time so the title screen's
+// runner keeps moving while no run is in progress.
+const runnerImg = el.runner.querySelector('i');
+const titleRunnerImg = el.titleRunner.querySelector('i');
+let runnerFrame = -1;
+
+function animateRunner(now) {
+  if (el.runner.classList.contains('stumble')) return;   // hold the pose on a hit
+  const ms = (mode === S.PLAY && g.powerUntil > g.t * 1000) ? RUNNER_FRAME_MS_FAST : RUNNER_FRAME_MS;
+  const f = Math.floor(now / ms) % RUNNER_FRAMES;
+  if (f === runnerFrame) return;
+  runnerFrame = f;
+  const url = 'url(' + RUNNER_SRC[f] + ')';
+  runnerImg.style.backgroundImage = url;
+  titleRunnerImg.style.backgroundImage = url;
+}
+
 let raf = 0;
 function frame(now) {
   raf = requestAnimationFrame(frame);
   const dt = Math.min(0.05, (now - last) / 1000 || 0);
   last = now;
+  animateRunner(now);
   if (mode !== S.PLAY) return;
   step(dt);
   if (mode === S.PLAY) render(dt);

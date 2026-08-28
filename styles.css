@@ -113,13 +113,9 @@ body.framed #bezel {
 
 /* Runner — fixed screen depth, mockup 2a: top 300, 54 x 88. */
 #runner { left: 0; top: 0; width: 44px; height: 88px; }
-#runner > i {
-  background-image: url('assets/runner_run.png');
-  background-size: 800% 100%;
-  animation: sheet .62s steps(8, jump-none) infinite;
-}
-#runner.fast > i { animation-duration: .42s; }
-#runner.stumble > i { animation-play-state: paused; }
+/* One file per frame — game.js swaps background-image, so there is no
+   sheet geometry here and a single pose can be replaced on its own. */
+#runner > i { background-size: 100% 100%; }
 #runner.hit { animation: hitblink .12s steps(2) 5; }
 @keyframes hitblink { 0%, 100% { opacity: 1; } 50% { opacity: .25; } }
 
@@ -245,7 +241,7 @@ body.framed #bezel {
 
 #caughtRunner {
   left: 195px; top: 156px; transform: translateX(-50%); width: 37px; height: 74px;
-  background-image: url('assets/runner_run.png'); background-size: 800% 100%;
+  background-image: url('assets/runner_01.png'); background-size: 100% 100%;
 }
 #caughtPursuer {
   left: 195px; top: 272px; transform: translateX(-50%); width: 82px; height: 170px;
@@ -312,7 +308,7 @@ button { font: inherit; border: 0; margin: 0; cursor: pointer; }
 #titleRunner {
   left: 195px; top: 326px; transform: translateX(-50%); width: 39px; height: 78px;
 }
-#titleRunner > i { background-image: url('assets/runner_run.png'); background-size: 800% 100%; animation: sheet .62s steps(8, jump-none) infinite; }
+#titleRunner > i { background-size: 100% 100%; }
 #titlePursuer {
   left: 195px; bottom: 244px; transform: translateX(-50%); width: 83px; height: 172px;
 }

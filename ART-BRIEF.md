@@ -17,12 +17,45 @@ uniform, feet-aligned cells.
 | `bg_aisle_floor.png` | 390 × 844 | tiling | Supermarket aisle floor: three lanes converging on a vanishing point at top centre, linoleum, seamless vertically. Replaces `bg_floor.jpg`. |
 | `bg_aisle_shelves.png` | 390 × 844 | tiling | The same aisle seen with shelving down both sides, for the title screen. Replaces `bg_walls.jpg`. |
 
-## In place
+## The runner: one file per frame
 
-`runner_run.png` (8 frames, 114 × 228 cells) and `pursuer_run.png` (8 frames,
-217 × 448 cells) are the real art, sliced with `tools/slice_sheets.py`. Both
-display boxes were narrowed to match their aspect: the runner is 44 × 88 at
-the runner's depth, the pursuer 101 × 208 at his base size.
+The runner is **not** a sprite sheet — each pose is its own file, so a single
+frame can be redrawn and dropped in without touching the others or the code.
+
+| File | What it is |
+| --- | --- |
+| `assets/runner_01.png` | contact, right foot down |
+| `assets/runner_02.png` | passing |
+| `assets/runner_03.png` | push off |
+| `assets/runner_04.png` | full stride, airborne |
+| `assets/runner_05.png` | reach |
+| `assets/runner_06.png` | contact, left foot down |
+| `assets/runner_07.png` | passing |
+| `assets/runner_08.png` | push off |
+
+The pose names above describe the cycle the current art happens to run; what
+matters is that the eight play in order as a loop.
+
+**Requirements.** Any pixel size, as long as **all eight are identical
+dimensions** and the figure is **aligned the same way in every frame** —
+same feet line, same horizontal centre. The game scales the file to its box,
+so a frame that is off-centre or a different size will make him jitter. Back
+view, transparent background, PNG. Current frames are 114 × 228.
+
+Aspect matters: the display box is 44 × 88, so a cell of ratio 0.5. A
+different ratio is fine, but tell me and I will resize the box to match rather
+than let it stretch.
+
+To change the number of frames, set `RUNNER_FRAMES` in `game.js` and name the
+files to match; `RUNNER_FRAME_MS` sets the pace (78 ms per frame, 52 ms while
+Tylenol is up).
+
+## Also in place
+
+`pursuer_run.png` is real art — a single 8-frame strip, 217 × 448 cells, cut
+with `tools/slice_sheets.py`. Say the word and it can be split into per-frame
+files the same way. Both display boxes were narrowed to match their aspect:
+the runner is 44 × 88 at his depth, the pursuer 101 × 208 at his base size.
 
 One note on the pursuer: he is *between the camera and the runner*, so as he closes on
 the runner he moves **up** the frame and gets slightly smaller — he is at his

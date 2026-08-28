@@ -35,7 +35,9 @@ python3 -m http.server 8000     # then open http://localhost:8000
 
 ## Art status
 
-The runner, the pursuer and the three chip bags are real art. The 54 obstacles
+The runner is real art, held as eight separate frame files
+(`assets/runner_01.png` … `runner_08.png`) so any single pose can be replaced
+on its own. The pursuer and the three chip bags are real art too. The 54 obstacles
 are colour-coded square placeholders from `tools/draw_obstacles.py`, and the
 two power-up pickups are drawn by `tools/draw_placeholders.py`. The background
 is still the previous theme's tunnel plate. `ART-BRIEF.md` lists every file,
