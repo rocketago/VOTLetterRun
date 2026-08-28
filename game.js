@@ -44,10 +44,7 @@ const BAGS_PICKUP  = 3;
 const BAGS_LOSS    = 0.28;    // share of the armful scattered on a hit
 const BAGS_LOSS_MIN = 4;
 
-const JUMP_MS      = 640;
-const JUMP_H       = 46;
-const JUMP_SAFE    = [0.10, 0.58];   // fraction of the jump that clears an obstacle
-const INVULN_MS    = 700;
+const INVULN_MS    = 700;            // grace period after a hit
 
 const LABEL_EVERY  = [4, 9];         // he stops to read an ingredients label
 const LABEL_MS     = 1650;
@@ -123,7 +120,6 @@ const sfx = (() => {
     get on() { return on; },
     toggle() { on = !on; store.set('sound', on); if (on) { wake(); this.pickup(); } return on; },
     lane()    { tone(440, 0.07, 'square', 0.05); },
-    jump()    { tone(320, 0.16, 'square', 0.06, 720); },
     pickup()  { tone(680, 0.09, 'square', 0.06); setTimeout(() => tone(1020, 0.1, 'square', 0.05), 70); },
     hit()     { tone(180, 0.32, 'sawtooth', 0.10, 60); },
     caught()  { tone(140, 0.9, 'sawtooth', 0.12, 44); },
@@ -208,7 +204,6 @@ let mode = S.LOAD;
 const g = {
   t: 0, odo: 0, speed: SPEED_BASE,
   lane: 0, laneX: STAGE_W / 2,
-  jumpT: -1,
   invuln: 0,
   prox: PROX_START, meters: 0, bags: BAGS_START, lost: 0,
   pursuerX: STAGE_W / 2,
@@ -222,7 +217,7 @@ function resetRun() {
   ents.forEach(kill);
   ents = [];
   Object.assign(g, {
-    t: 0, odo: 0, speed: SPEED_BASE, lane: 0, laneX: STAGE_W / 2, jumpT: -1, invuln: 0,
+    t: 0, odo: 0, speed: SPEED_BASE, lane: 0, laneX: STAGE_W / 2, invuln: 0,
     prox: PROX_START, meters: 0, bags: BAGS_START, lost: 0, pursuerX: STAGE_W / 2,
     nextObs: 1.2, nextPickup: 2.4, nextRung: 0,
     labelAt: rand(LABEL_EVERY), labelUntil: 0,
@@ -244,12 +239,6 @@ function move(dir) {
   if (next !== g.lane) { g.lane = next; sfx.lane(); }
 }
 
-function jump() {
-  if (mode !== S.PLAY || g.jumpT >= 0) return;
-  g.jumpT = 0;
-  sfx.jump();
-}
-
 let touch = null;
 const SWIPE = 24;
 el.stage.addEventListener('touchstart', (ev) => {
@@ -263,7 +252,6 @@ el.stage.addEventListener('touchmove', (ev) => {
   const t = ev.changedTouches[0];
   const dx = t.clientX - touch.x, dy = t.clientY - touch.y;
   if (Math.abs(dx) > SWIPE && Math.abs(dx) > Math.abs(dy)) { move(dx > 0 ? 1 : -1); touch.done = true; }
-  else if (dy < -SWIPE && Math.abs(dy) > Math.abs(dx)) { jump(); touch.done = true; }
 }, { passive: true });
 
 el.stage.addEventListener('touchend', () => { touch = null; }, { passive: true });
@@ -273,7 +261,6 @@ document.addEventListener('keydown', (ev) => {
   switch (ev.key) {
     case 'ArrowLeft': case 'a': case 'A': move(-1); break;
     case 'ArrowRight': case 'd': case 'D': move(1); break;
-    case 'ArrowUp': case 'w': case 'W': case ' ': ev.preventDefault(); jump(); break;
     case 'Enter':
       if (mode === S.TITLE) startRun();
       else if (mode === S.CAUGHT) startRun();
@@ -441,7 +428,6 @@ function step(dt) {
 
   // ── runner
   if (g.invuln > 0) g.invuln -= dt * 1000;
-  if (g.jumpT >= 0) { g.jumpT += dt * 1000; if (g.jumpT > JUMP_MS) g.jumpT = -1; }
   const targetX = STAGE_W / 2 + g.lane * LANE_X;
   g.laneX += (targetX - g.laneX) * Math.min(1, dt * 14);
 
@@ -456,7 +442,7 @@ function step(dt) {
     const kind = pick(OBSTACLES), sp = SPRITES[kind];
     const lane = (Math.random() * 3 | 0) - 1;
     spawn('obs', { img: sp.img, w: sp.w, h: sp.h, lane });
-    if (g.t > 45 && Math.random() < 0.34) {   // second obstacle, always one lane free
+    if (g.t > 55 && Math.random() < 0.28) {   // second obstacle, always one lane free
       const other = pick([-1, 0, 1].filter((l) => l !== lane));
       const k2 = pick(OBSTACLES), s2 = SPRITES[k2];
       spawn('obs', { img: s2.img, w: s2.w, h: s2.h, lane: other });
@@ -485,10 +471,7 @@ function step(dt) {
   }
   if (g.labelUntil && g.labelUntil <= nowMs) { g.labelUntil = 0; el.labelTag.style.display = 'none'; }
 
-  // ── travel + collisions
-  const jumpF = g.jumpT >= 0 ? g.jumpT / JUMP_MS : -1;
-  const airborne = jumpF > JUMP_SAFE[0] && jumpF < JUMP_SAFE[1];
-
+  // ── travel + collisions. The lane you are in is the whole defence.
   for (let i = ents.length - 1; i >= 0; i--) {
     const e = ents[i];
     const prevZ = e.z;
@@ -498,7 +481,7 @@ function step(dt) {
     if (prevZ > Z_RUNNER && e.z <= Z_RUNNER && !e.hitDone) {
       e.hitDone = true;
       if (e.lane === g.lane) {
-        if (e.kind === 'obs' && !airborne) hit();
+        if (e.kind === 'obs') hit();
         else if (e.kind === 'pickup') { collect(); kill(e); ents.splice(i, 1); continue; }
         else if (e.kind === 'vax') { powerUp(); kill(e); ents.splice(i, 1); continue; }
       }
@@ -513,12 +496,10 @@ function step(dt) {
 }
 
 function render(dt) {
-  // runner
-  const jumpF = g.jumpT >= 0 ? g.jumpT / JUMP_MS : -1;
-  const lift = jumpF >= 0 ? Math.sin(jumpF * Math.PI) * JUMP_H : 0;
-  const tilt = jumpF >= 0 ? Math.sin(jumpF * Math.PI) * -4 : 0;
-  el.runner.style.transform = 'translate(' + (g.laneX - 27).toFixed(1) + 'px,' + (300 - lift).toFixed(1) +
-    'px) rotate(' + tilt.toFixed(1) + 'deg)';
+  // runner — leans into the lane change, which is the only move he has
+  const leanX = (STAGE_W / 2 + g.lane * LANE_X) - g.laneX;
+  el.runner.style.transform = 'translate(' + (g.laneX - 27).toFixed(1) + 'px, 300px) rotate(' +
+    clamp(leanX * -0.06, -7, 7).toFixed(1) + 'deg)';
   el.speedTag.style.transform = 'translate(' + (g.laneX - 52).toFixed(1) + 'px, 292px)';
 
   // pursuer — closes on the runner as proximity fills (mockup 2a at 62%: bottom 74, 119 x 190)
@@ -632,6 +613,6 @@ if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
 preload();
 
 // Handy for tuning / verification runs.
-window.SnackRun = { g, S, get mode() { return mode; }, startRun, toCaught, toTitle, toBoard, move, jump, powerUp, ents: () => ents };
+window.SnackRun = { g, S, get mode() { return mode; }, startRun, toCaught, toTitle, toBoard, move, powerUp, ents: () => ents };
 
 })();

@@ -16,16 +16,16 @@ python3 -m http.server 8000     # then open http://localhost:8000
 | Input | Touch | Keyboard |
 | --- | --- | --- |
 | Change lane | swipe left / right | ← → or A D |
-| Jump | swipe up | ↑ W or space |
 | Start / restart | tap | enter |
 
 ## Mechanics
 
-- **Three lanes.** The runner sits at a fixed depth; everything else travels
-  toward the camera on the lane it spawned in.
+- **Three lanes, and nothing else.** Changing lane is the only move. The
+  runner sits at a fixed depth; everything else travels toward the camera on
+  the lane it spawned in.
 - **Bags** are the score you carry. Loose bags on the floor add three each.
 - **Recalled food** — romaine, ground beef, cantaloupe — costs you about a
-  quarter of your armful and lets him close. Jump to clear it.
+  quarter of your armful and lets him close. Change lane or wear it.
 - **Proximity** fills over time and jumps on every hit. When it fills, he has
   you.
 - **He stops to read an ingredients label** on a random 4–9 s interval, which
@@ -67,7 +67,7 @@ warning at base speed — and are removed at `z = 0.40`, past the camera.
 ## Tuning
 
 Every number worth touching is a constant at the top of `game.js`: speed ramp,
-proximity rates, the bag economy, jump arc and safe window, spawn gaps, and the
+proximity rates, the bag economy, spawn gaps, and the
 label-check and booster intervals.
 
 ## Repo layout
