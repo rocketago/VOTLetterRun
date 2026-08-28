@@ -1,6 +1,7 @@
-/* Files Run — screen chrome.
-   Every coordinate in here comes from `Files Run - Game Mockup.dc.html`
-   (screens 2a gameplay, 2b power-up, 2c caught, 2d title) at 390 x 844. */
+/* Snack Run — screen chrome.
+   Layout coordinates come from `Files Run - Game Mockup.dc.html`
+   (screens 2a gameplay, 2b power-up, 2c caught, 2d title) at 390 x 844,
+   restyled for the aisle. */
 
 :root {
   --tunnel-dark: #0B0D12;
@@ -104,42 +105,9 @@ body.framed #bezel {
 .ent.pickup > i { animation: bob 1s ease-in-out infinite; }
 .ent.rung { background: linear-gradient(90deg, rgba(242,169,59,0), rgba(242,169,59,.30), rgba(242,169,59,0)); }
 
-/* The doorway power-up, and the tableau it freezes into (mockup 2b). */
-.ent.door > .plate {
-  position: absolute; inset: 0;
-  background: url('assets/door_open.png') center / contain no-repeat;
-  image-rendering: pixelated;
-  /* Feathered so the wall tile sits in the tunnel instead of reading as a pasted rectangle. */
-  -webkit-mask-image: radial-gradient(66% 74% at 50% 46%, #000 34%, transparent 96%);
-  mask-image: radial-gradient(66% 74% at 50% 46%, #000 34%, transparent 96%);
-}
-.ent.door.shut > .plate { background-image: url('assets/door_shut.png'); }
-.ent.door > .girl {
-  position: absolute; left: 39.8%; bottom: 18.3%; width: 35.2%; height: 53.2%;
-  background: url('assets/distraction.png') 0 0 / 400% 100% no-repeat;
-  image-rendering: pixelated;
-  animation: sheet 1.1s steps(4, jump-none) infinite;
-}
-.ent.door > .pulled {
-  position: absolute; right: -19.3%; bottom: 2.8%; width: 54.5%; height: 70.6%;
-  background: url('assets/pursuer_run.png') 0 0 / 700% 100% no-repeat;
-  image-rendering: pixelated;
-  transform: rotate(-9deg);
-  animation: sheet .9s steps(7, jump-none) infinite;
-  display: none;
-}
-.ent.door.pinned { transition: none; }
-.ent.door.pinned > .pulled { display: block; }
-.ent.door.mirror { transform: scaleX(-1); }
-.ent.door.mirror > .girl, .ent.door.mirror > .pulled { transform: scaleX(-1); }
-.ent.door.mirror.pinned > .pulled { transform: scaleX(-1) rotate(9deg); }
-
-#pulledLabel {
-  position: absolute; bottom: 248px; left: 14px;
-  font-family: var(--pixel); font-size: 6px; color: var(--amber);
-  display: none;
-}
-#pulledLabel.right { left: auto; right: 14px; }
+/* Pickups: the bag you want, and the booster that buys you six seconds. */
+.ent.vax > i { animation: bob .8s ease-in-out infinite; }
+.ent.vax { filter: drop-shadow(0 0 6px rgba(110, 168, 214, .75)); }
 
 /* Runner — fixed screen depth, mockup 2a: top 300, 54 x 88. */
 #runner { left: 0; top: 0; width: 54px; height: 88px; }
@@ -168,13 +136,11 @@ body.framed #bezel {
   animation: sheet .78s steps(7, jump-none) infinite;
 }
 
-#gas {
-  left: 0; top: 0; width: 74px; height: 60px;
-  background-image: url('assets/gas.png');
-  background-size: 600% 100%;
-  opacity: 0;
+#labelTag {
+  position: absolute; left: 0; top: 0;
+  font-family: var(--pixel); font-size: 6px; color: var(--green);
+  display: none; white-space: nowrap;
 }
-#gas.on { animation: sheet 1.1s steps(6, jump-none) infinite, puff 1.65s linear 1 forwards; }
 
 #vignette {
   position: absolute; inset: 0; pointer-events: none;
@@ -279,7 +245,7 @@ body.framed #bezel {
   background-position-x: 50%;
 }
 .drop {
-  position: absolute; background: url('assets/page_drop.png') center / contain no-repeat;
+  position: absolute; background: url('assets/chip_drop.png') center / contain no-repeat;
   image-rendering: pixelated;
 }
 .d1 { left: 40px; top: 342px; width: 40px; height: 48px; transform: rotate(-22deg); opacity: .9; }

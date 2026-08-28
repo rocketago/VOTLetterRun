@@ -1,12 +1,15 @@
-/* Files Run — an endless runner about document custody.
+/* Snack Run — an endless runner about processed food.
  *
- * Built from the Claude Design handoff: screens 2a (gameplay), 2b (power-up),
- * 2c (caught) and 2d (title) of `Files Run - Game Mockup.dc.html`, with the
- * mechanics described in `Files Run - Game UI Spec.dc.html` and the asset brief.
+ * You run the aisle with an armful of chips while the Secretary closes on you.
+ * Recalled food scatters what you are carrying; loose bags go back in the
+ * armful; a booster buys you six seconds at double speed.
+ *
+ * Screen layout inherits the Claude Design handoff (screens 2a gameplay,
+ * 2b power-up, 2c caught, 2d title of `Files Run - Game Mockup.dc.html`).
  *
  * The world is a one-point perspective. Everything that travels lives at a
  * depth `z`: z = 1 is the runner's screen depth, z > 1 is further up the
- * tunnel toward the vanishing point, z < 1 is between the runner and the
+ * aisle toward the vanishing point, z < 1 is between the runner and the
  * camera. Screen position and size fall straight out of 1/z.
  */
 (() => {
@@ -33,23 +36,23 @@ const PROX_START   = 0.30;
 const PROX_RATE    = 0.0105;  // per second at base speed
 const PROX_HIT     = 0.15;
 const PROX_PICKUP  = 0.006;
-const PROX_GAS     = 0.05;    // per second while the gas hangs
-const PROX_POWERUP = 0.10;    // clamped to this when the doorway fires
+const PROX_LABEL   = 0.05;    // per second while he stops to read a label
+const PROX_POWERUP = 0.10;    // clamped to this when the booster lands
 
-const PAGES_START  = 24;
-const PAGES_PICKUP = 3;
-const PAGES_LOSS   = 0.28;    // share of the carried stack scattered on a hit
-const PAGES_LOSS_MIN = 4;
+const BAGS_START   = 24;
+const BAGS_PICKUP  = 3;
+const BAGS_LOSS    = 0.28;    // share of the armful scattered on a hit
+const BAGS_LOSS_MIN = 4;
 
 const JUMP_MS      = 640;
 const JUMP_H       = 46;
 const JUMP_SAFE    = [0.10, 0.58];   // fraction of the jump that clears an obstacle
 const INVULN_MS    = 700;
 
-const GAS_EVERY    = [4, 9];         // seconds, per the asset brief
-const GAS_MS       = 1650;
-const DOOR_FIRST   = 16;
-const DOOR_EVERY   = [20, 30];
+const LABEL_EVERY  = [4, 9];         // he stops to read an ingredients label
+const LABEL_MS     = 1650;
+const VAX_FIRST    = 16;             // first booster on the shelf
+const VAX_EVERY    = [20, 30];
 const POWERUP_MS   = 6000;
 
 const OBS_GAP      = [1.7, 2.9];     // z units between obstacles, early
@@ -57,21 +60,22 @@ const OBS_GAP_LATE = [1.25, 2.1];
 const PICKUP_GAP   = [1.1, 2.3];
 const RUNG_GAP     = 0.55;
 
+// Sizes are the sprite's size at the runner's depth (z = 1); perspective does the rest.
 const SPRITES = {
-  turnstile: { img: 'obs_turnstile.png', w: 52,  h: 48.6 },
-  cart:      { img: 'obs_cart.png',      w: 54,  h: 39.6 },
-  gate:      { img: 'obs_gate.png',      w: 52,  h: 43.3 },
-  pages:     { img: 'pickup_pages.png',  w: 28,  h: 24.5 },
-  drop:      { img: 'page_drop.png',     w: 22,  h: 26.6 },
+  lettuce: { img: 'obs_lettuce.png',  w: 52, h: 47.7 },   // recalled romaine
+  beef:    { img: 'obs_beef.png',     w: 54, h: 38.3 },   // recalled ground beef
+  melon:   { img: 'obs_melon.png',    w: 52, h: 41.2 },   // recalled cantaloupe
+  chips:   { img: 'pickup_chips.png', w: 28, h: 24.5 },   // the bag you are here for
+  crumb:   { img: 'chip_drop.png',    w: 22, h: 26.9 },   // spills out of the armful
+  vax:     { img: 'pickup_vax.png',   w: 25, h: 30 },     // the booster
 };
-const OBSTACLES = ['turnstile', 'cart', 'gate'];
+const OBSTACLES = ['lettuce', 'beef', 'melon'];
 
 const ASSETS = [
   'assets/bg_floor.jpg', 'assets/bg_walls.jpg',
-  'assets/runner_run.png', 'assets/pursuer_run.png', 'assets/distraction.png',
-  'assets/gas.png', 'assets/door_open.png', 'assets/door_shut.png',
-  'assets/obs_turnstile.png', 'assets/obs_cart.png', 'assets/obs_gate.png',
-  'assets/pickup_pages.png', 'assets/page_drop.png',
+  'assets/runner_run.png', 'assets/pursuer_run.png',
+  'assets/obs_lettuce.png', 'assets/obs_beef.png', 'assets/obs_melon.png',
+  'assets/pickup_chips.png', 'assets/chip_drop.png', 'assets/pickup_vax.png',
 ];
 
 /* ────────────────────────────────────────────────────────── helpers */
@@ -87,12 +91,10 @@ const yAt = (z) => HORIZON_Y + PERSP / z;
 const sAt = (z) => 1 / z;
 const xAt = (z, lane) => STAGE_W / 2 + lane * LANE_X / z;
 
-// Depth the doorway freezes at while the power-up runs (mockup 2b: bottom 22).
-const Z_DOOR_PINNED = PERSP / (STAGE_H - 22 - HORIZON_Y);
 
 const store = {
-  get(k, d) { try { const v = localStorage.getItem('filesrun.' + k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } },
-  set(k, v) { try { localStorage.setItem('filesrun.' + k, JSON.stringify(v)); } catch (e) { /* private mode */ } },
+  get(k, d) { try { const v = localStorage.getItem('snackrun.' + k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem('snackrun.' + k, JSON.stringify(v)); } catch (e) { /* private mode */ } },
 };
 
 /* ────────────────────────────────────────────────────────── audio */
@@ -133,10 +135,10 @@ const sfx = (() => {
 
 const el = {
   stage: $('stage'), field: $('field'), world: $('world'),
-  runner: $('runner'), pursuer: $('pursuer'), gas: $('gas'),
+  runner: $('runner'), pursuer: $('pursuer'), labelTag: $('labelTag'),
   speedTag: $('speedTag'), vignette: $('vignette'), flash: $('flash'),
   hud: $('hud'), prox: document.querySelector('.prox'), proxFill: $('proxFill'), proxState: $('proxState'),
-  pages: $('pages'), dist: $('dist'), hiSmall: $('hiSmall'),
+  bags: $('bags'), dist: $('dist'), hiSmall: $('hiSmall'),
   delay: $('delay'), delaySecs: $('delaySecs'), delayFill: $('delayFill'),
   pickupFlash: $('pickupFlash'), hints: $('hints'),
   title: $('title'), caught: $('caught'), board: $('board'), howtoPanel: $('howtoPanel'), loading: $('loading'),
@@ -145,10 +147,6 @@ const el = {
   loadFill: $('loadFill'), loadState: $('loadState'),
 };
 
-const pulledLabel = document.createElement('div');
-pulledLabel.id = 'pulledLabel';
-pulledLabel.textContent = 'PULLED INTO THE ROOM';
-el.field.appendChild(pulledLabel);
 
 /* ────────────────────────────────────────────────────────── stage fit */
 
@@ -177,10 +175,7 @@ function spawn(kind, opts) {
   Object.assign(e, { kind, z: Z_SPAWN, lane: 0, dead: false, hitDone: false, spin: 0, spinRate: 0 }, opts);
   d.style.width = e.w + 'px';
   d.style.height = e.h + 'px';
-  if (kind === 'door') {
-    d.innerHTML = '<div class="plate"></div><div class="girl"></div><div class="pulled"></div>';
-    if (e.lane > 0) d.classList.add('mirror');
-  } else if (kind === 'rung') {
+  if (kind === 'rung') {
     d.innerHTML = '';
   } else {
     d.innerHTML = '<i style="background-image:url(assets/' + e.img + ')"></i>';
@@ -215,12 +210,12 @@ const g = {
   lane: 0, laneX: STAGE_W / 2,
   jumpT: -1,
   invuln: 0,
-  prox: PROX_START, meters: 0, pages: PAGES_START, lost: 0,
+  prox: PROX_START, meters: 0, bags: BAGS_START, lost: 0,
   pursuerX: STAGE_W / 2,
   nextObs: 0, nextPickup: 0, nextRung: 0,
-  gasAt: 0, gasUntil: 0,
-  doorAt: 0, powerUntil: 0, pinnedDoor: null,
-  best: store.get('best', 0), delivered: store.get('delivered', 0),
+  labelAt: 0, labelUntil: 0,
+  vaxAt: 0, powerUntil: 0,
+  best: store.get('best', 0), eaten: store.get('eaten', 0),
 };
 
 function resetRun() {
@@ -228,16 +223,15 @@ function resetRun() {
   ents = [];
   Object.assign(g, {
     t: 0, odo: 0, speed: SPEED_BASE, lane: 0, laneX: STAGE_W / 2, jumpT: -1, invuln: 0,
-    prox: PROX_START, meters: 0, pages: PAGES_START, lost: 0, pursuerX: STAGE_W / 2,
+    prox: PROX_START, meters: 0, bags: BAGS_START, lost: 0, pursuerX: STAGE_W / 2,
     nextObs: 1.2, nextPickup: 2.4, nextRung: 0,
-    gasAt: rand(GAS_EVERY), gasUntil: 0,
-    doorAt: DOOR_FIRST, powerUntil: 0, pinnedDoor: null,
+    labelAt: rand(LABEL_EVERY), labelUntil: 0,
+    vaxAt: VAX_FIRST, powerUntil: 0,
   });
   el.runner.classList.remove('fast', 'stumble', 'hit');
   el.delay.classList.remove('on');
   el.speedTag.style.display = 'none';
-  pulledLabel.style.display = 'none';
-  el.pursuer.style.display = '';
+  el.labelTag.style.display = 'none';
   el.hints.classList.remove('fade');
   setTimeout(() => { if (mode === S.PLAY) el.hints.classList.add('fade'); }, 4200);
 }
@@ -298,7 +292,7 @@ function show(screen) {
 
 function toTitle() {
   mode = S.TITLE;
-  el.titleFoot.textContent = 'HI ' + comma(g.best) + ' m · ' + comma(g.delivered) + ' pages delivered';
+  el.titleFoot.textContent = 'HI ' + comma(g.best) + ' m · ' + comma(g.eaten) + ' bags saved';
   show(el.title);
 }
 
@@ -317,17 +311,17 @@ function toCaught() {
 
   const meters = Math.round(g.meters);
   const runs = store.get('runs', []);
-  runs.push({ m: meters, p: g.pages, at: Date.now() });
+  runs.push({ m: meters, p: g.bags, at: Date.now() });
   runs.sort((a, b) => b.m - a.m);
   store.set('runs', runs.slice(0, 30));
 
   const isBest = meters > g.best;
   if (isBest) { g.best = meters; store.set('best', meters); }
-  g.delivered += g.pages;
-  store.set('delivered', g.delivered);
+  g.eaten += g.bags;
+  store.set('eaten', g.eaten);
 
   el.rDist.textContent = comma(meters) + ' M';
-  el.rKept.textContent = comma(g.pages);
+  el.rKept.textContent = comma(g.bags);
   el.rLost.textContent = comma(g.lost);
   el.rBest.textContent = comma(g.best) + ' M';
 
@@ -347,7 +341,7 @@ function toBoard(from) {
         '<div class="pos">' + (i + 1) + '</div>' +
         '<div class="when">' + new Date(r.at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + '</div>' +
         '<div class="m">' + comma(r.m) + ' M</div>' +
-        '<div class="pg">' + comma(r.p) + ' pages</div>' +
+        '<div class="pg">' + comma(r.p) + ' bags</div>' +
         '</div>').join('')
     : '<div class="board-empty">No runs yet. The files are still sealed.</div>';
   show(el.board);
@@ -357,19 +351,19 @@ function toBoard(from) {
 
 function hit() {
   if (g.invuln > 0) return;
-  const lost = Math.min(g.pages, Math.max(PAGES_LOSS_MIN, Math.round(g.pages * PAGES_LOSS)));
-  g.pages -= lost;
+  const lost = Math.min(g.bags, Math.max(BAGS_LOSS_MIN, Math.round(g.bags * BAGS_LOSS)));
+  g.bags -= lost;
   g.lost += lost;
   g.prox = clamp(g.prox + PROX_HIT, 0, 1);
   g.invuln = INVULN_MS;
   sfx.hit();
 
-  // FX_PAGE_DROP: 6–14 pages tumbling toward the camera past the pursuer.
+  // 6–14 chips tumbling toward the camera past him.
   const n = 6 + ((Math.random() * 9) | 0);
   for (let i = 0; i < n; i++) {
-    const sp = SPRITES.drop;
-    // They fall out of the folder and drift toward the camera slower than the
-    // tunnel scrolls, so the scatter reads for the best part of a second.
+    const sp = SPRITES.crumb;
+    // They spill out of the armful and drift toward the camera slower than the
+    // aisle scrolls, so the scatter reads for the best part of a second.
     spawn('drop', {
       img: sp.img, w: sp.w, h: sp.h, lane: g.lane,
       z: 1.0 - Math.random() * 0.05,
@@ -386,60 +380,39 @@ function hit() {
 }
 
 function collect() {
-  g.pages += PAGES_PICKUP;
+  g.bags += BAGS_PICKUP;
   g.prox = clamp(g.prox - PROX_PICKUP, 0, 1);
   sfx.pickup();
-  el.pickupFlash.textContent = '+' + PAGES_PICKUP + ' PAGES';
+  el.pickupFlash.textContent = '+' + BAGS_PICKUP + ' BAGS';
   el.pickupFlash.classList.remove('on'); void el.pickupFlash.offsetWidth; el.pickupFlash.classList.add('on');
 }
 
-// DOOR_ROOM fires only in an outer lane: he is pulled in, the run keeps going.
-function powerUp(door) {
+// The booster: six seconds at double speed, and he drops a long way back.
+function powerUp() {
   g.powerUntil = g.t * 1000 + POWERUP_MS;
   g.prox = Math.min(g.prox, PROX_POWERUP);
-  g.pinnedDoor = door;
   sfx.power();
 
-  door.pinned = true;
-  door.el.classList.add('pinned');
-  door.el.style.width = '176px';
-  door.el.style.height = '218px';
-  door.el.style.opacity = '1';
-  door.el.style.transform = 'translate(' + (door.lane > 0 ? STAGE_W - 6 - 176 : 6) + 'px, ' + (STAGE_H - 22 - 218) + 'px)';
-
-  el.pursuer.style.display = 'none';
-  el.gas.classList.remove('on');
-  pulledLabel.style.display = 'block';
-  pulledLabel.classList.toggle('right', door.lane > 0);
+  el.labelTag.style.display = 'none';
   el.delay.classList.add('on');
   el.runner.classList.add('fast');
   el.speedTag.style.display = 'block';
+  el.pickupFlash.textContent = 'BOOSTED';
+  el.pickupFlash.classList.remove('on'); void el.pickupFlash.offsetWidth; el.pickupFlash.classList.add('on');
 }
 
 function endPowerUp() {
-  const door = g.pinnedDoor;
-  g.pinnedDoor = null;
   g.powerUntil = 0;
-  if (door && !door.dead) {
-    // He is put out, the door shuts, and the whole tile resumes its travel past the camera.
-    door.el.classList.add('shut');
-    door.el.classList.remove('pinned');
-    door.el.style.width = door.w + 'px';
-    door.el.style.height = door.h + 'px';
-    door.pinned = false;
-    door.z = Z_DOOR_PINNED;
-  }
-  el.pursuer.style.display = '';
-  pulledLabel.style.display = 'none';
   el.delay.classList.remove('on');
   el.runner.classList.remove('fast');
   el.speedTag.style.display = 'none';
 }
 
-function fireGas() {
+// He stops to read an ingredients label and loses ground for ~1.5 s.
+function readLabel() {
   if (g.powerUntil) return;
-  g.gasUntil = g.t * 1000 + GAS_MS;
-  el.gas.classList.remove('on'); void el.gas.offsetWidth; el.gas.classList.add('on');
+  g.labelUntil = g.t * 1000 + LABEL_MS;
+  el.labelTag.style.display = 'block';
 }
 
 /* ────────────────────────────────────────────────────────── the loop */
@@ -461,7 +434,7 @@ function step(dt) {
     g.prox = Math.min(g.prox, PROX_POWERUP);
   } else {
     g.prox += PROX_RATE * dt * (0.7 + 0.5 * (g.speed / SPEED_BASE));
-    if (g.gasUntil > nowMs) g.prox -= PROX_GAS * dt;
+    if (g.labelUntil > nowMs) g.prox -= PROX_LABEL * dt;
     g.prox = clamp(g.prox, 0, 1);
   }
   if (g.powerUntil && !power) endPowerUp();
@@ -494,21 +467,23 @@ function step(dt) {
     const busy = ents.filter((e) => e.kind === 'obs' && e.z > Z_SPAWN - 0.8).map((e) => e.lane);
     const free = [-1, 0, 1].filter((l) => busy.indexOf(l) < 0);
     if (free.length) {
-      const sp = SPRITES.pages;
+      const sp = SPRITES.chips;
       spawn('pickup', { img: sp.img, w: sp.w, h: sp.h, lane: pick(free) });
     }
   }
-  if (g.t >= g.doorAt && !g.powerUntil && !ents.some((e) => e.kind === 'door')) {
-    g.doorAt = g.t + rand(DOOR_EVERY);
-    // DOOR_ROOM spawns in an outer lane only, set back into the tunnel wall.
-    spawn('door', { w: 80, h: 99, lane: Math.random() < 0.5 ? -1 : 1, laneMul: 1.5 });
+  // ── the booster, on a shelf in any lane
+  if (g.t >= g.vaxAt && !g.powerUntil && !ents.some((e) => e.kind === 'vax')) {
+    g.vaxAt = g.t + rand(VAX_EVERY);
+    const sp = SPRITES.vax;
+    spawn('vax', { img: sp.img, w: sp.w, h: sp.h, lane: (Math.random() * 3 | 0) - 1 });
   }
 
-  // ── gas: random 4–9 s, slows him for ~1.5 s
-  if (!power && g.t >= g.gasAt) {
-    g.gasAt = g.t + rand(GAS_EVERY);
-    fireGas();
+  // ── he stops to read a label: random 4–9 s, costs him ~1.5 s of ground
+  if (!power && g.t >= g.labelAt) {
+    g.labelAt = g.t + rand(LABEL_EVERY);
+    readLabel();
   }
+  if (g.labelUntil && g.labelUntil <= nowMs) { g.labelUntil = 0; el.labelTag.style.display = 'none'; }
 
   // ── travel + collisions
   const jumpF = g.jumpT >= 0 ? g.jumpT / JUMP_MS : -1;
@@ -516,8 +491,6 @@ function step(dt) {
 
   for (let i = ents.length - 1; i >= 0; i--) {
     const e = ents[i];
-    if (e.pinned) continue;
-
     const prevZ = e.z;
     e.z -= eff * dt * (e.kind === 'drop' ? e.fall : 1);
     if (e.spinRate) e.spin += e.spinRate * dt;
@@ -527,7 +500,7 @@ function step(dt) {
       if (e.lane === g.lane) {
         if (e.kind === 'obs' && !airborne) hit();
         else if (e.kind === 'pickup') { collect(); kill(e); ents.splice(i, 1); continue; }
-        else if (e.kind === 'door') { powerUp(e); continue; }
+        else if (e.kind === 'vax') { powerUp(); kill(e); ents.splice(i, 1); continue; }
       }
     }
 
@@ -557,17 +530,16 @@ function render(dt) {
   const px = g.pursuerX - 65 + jitter;
   const py = STAGE_H - bottom - 208;
   el.pursuer.style.transform = 'translate(' + px.toFixed(1) + 'px,' + py.toFixed(1) + 'px) scale(' + s.toFixed(3) + ')';
-  // FX_GAS plays low and behind him — mockup 2a puts it 133px left of his centre, 14px below his feet.
-  const gasX = Math.max(4, g.pursuerX - 133), gasY = STAGE_H - (bottom - 14) - 60;
-  el.gas.style.transform = 'translate(' + gasX.toFixed(1) + 'px,' + gasY.toFixed(1) + 'px)';
+  // The label-check beat sits just above his head.
+  el.labelTag.style.transform = 'translate(' + (g.pursuerX - 46).toFixed(1) + 'px,' + (py - 14).toFixed(1) + 'px)';
 
   // HUD
   el.proxFill.style.width = (g.prox * 100).toFixed(1) + '%';
-  const safe = g.powerUntil > g.t * 1000 || g.gasUntil > g.t * 1000;
+  const safe = g.powerUntil > g.t * 1000 || g.labelUntil > g.t * 1000;
   el.prox.classList.toggle('safe', safe);
   el.proxState.textContent = safe ? 'Falling back' : 'Closing';
   el.proxState.className = safe ? 'falling' : 'closing';
-  el.pages.textContent = comma(g.pages);
+  el.bags.textContent = comma(g.bags);
   el.dist.textContent = comma(g.meters) + ' M';
   el.hiSmall.textContent = 'HI ' + comma(g.best);
 
@@ -613,10 +585,10 @@ $('sound').addEventListener('click', (ev) => {
 $('sound').textContent = 'Sound: ' + (sfx.on ? 'on' : 'off');
 
 $('share').addEventListener('click', async () => {
-  const text = 'Files Run — I carried ' + comma(g.pages) + ' pages ' + comma(Math.round(g.meters)) +
-    ' m down the tunnel before he caught me.';
+  const text = 'Snack Run — I got ' + comma(g.bags) + ' bags ' + comma(Math.round(g.meters)) +
+    ' m down the aisle before he caught me.';
   try {
-    if (navigator.share) await navigator.share({ title: 'Files Run', text });
+    if (navigator.share) await navigator.share({ title: 'Snack Run', text });
     else if (navigator.clipboard) { await navigator.clipboard.writeText(text); flashBtn($('share'), 'Copied'); }
     else flashBtn($('share'), text.slice(0, 18));
   } catch (e) { /* dismissed */ }
@@ -660,6 +632,6 @@ if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
 preload();
 
 // Handy for tuning / verification runs.
-window.FilesRun = { g, S, get mode() { return mode; }, startRun, toCaught, toTitle, toBoard, move, jump, powerUp, ents: () => ents };
+window.SnackRun = { g, S, get mode() { return mode; }, startRun, toCaught, toTitle, toBoard, move, jump, powerUp, ents: () => ents };
 
 })();

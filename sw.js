@@ -1,12 +1,11 @@
-/* Files Run — cache-first service worker so a run survives a dead signal. */
-const CACHE = 'filesrun-v1';
+/* Snack Run — cache-first service worker so a run survives a dead signal. */
+const CACHE = 'snackrun-v1';
 const SHELL = [
   './', './index.html', './styles.css', './game.js', './manifest.webmanifest',
   './assets/bg_floor.jpg', './assets/bg_walls.jpg',
-  './assets/runner_run.png', './assets/pursuer_run.png', './assets/distraction.png',
-  './assets/gas.png', './assets/door_open.png', './assets/door_shut.png',
-  './assets/obs_turnstile.png', './assets/obs_cart.png', './assets/obs_gate.png',
-  './assets/pickup_pages.png', './assets/page_drop.png',
+  './assets/runner_run.png', './assets/pursuer_run.png',
+  './assets/obs_lettuce.png', './assets/obs_beef.png', './assets/obs_melon.png',
+  './assets/pickup_chips.png', './assets/chip_drop.png', './assets/pickup_vax.png',
 ];
 
 self.addEventListener('install', (ev) => {
