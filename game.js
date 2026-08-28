@@ -19,10 +19,16 @@
 
 const STAGE_W = 390, STAGE_H = 844;
 
-const HORIZON_Y      = 30;    // vanishing point in the floor plate
-const RUNNER_FEET_Y  = 388;   // mockup 2a: runner top 300 + height 88
+// Measured off bg_aisle.jpg after `background-size: cover` into the 390 x 844
+// stage: the shelf bases converge at (195, 282.5), and the aisle's half-width
+// grows by 0.588px for every px below that.
+const HORIZON_Y      = 282.5;
+const AISLE_SPREAD   = 0.588;
+const RUNNER_FEET_Y  = 552;   // his depth; the aisle is ~317px wide here
+const RUNNER_H       = 116;   // so his top edge sits at 436
 const PERSP          = RUNNER_FEET_Y - HORIZON_Y;
-const LANE_X         = 118;   // lane centre offset at the runner's depth
+// Three lanes across the aisle at the runner's depth, so the shelves bound them.
+const LANE_X         = Math.round(AISLE_SPREAD * PERSP * 2 / 3);
 const Z_SPAWN        = 4.2;   // just under the vanishing point
 const Z_EXIT         = 0.40;  // past the camera
 const Z_RUNNER       = 1;
@@ -94,7 +100,7 @@ const CHIP_BAGS = ['chips', 'chipsB', 'chipsG'];
 OBSTACLE_ART.forEach(([n, w, h]) => { SPRITES[n] = { img: n + '.png', w, h }; });
 
 const ASSETS = [
-  'assets/bg_floor.jpg', 'assets/bg_walls.jpg',
+  'assets/bg_aisle.jpg',
   'assets/pursuer_run.png',
   'assets/pickup_chips.png', 'assets/pickup_chips_b.png', 'assets/pickup_chips_g.png',
   'assets/chip_drop.png',
@@ -496,7 +502,7 @@ function step(dt) {
   // ── scheduled spawns
   if (g.odo >= g.nextRung) {
     g.nextRung = g.odo + RUNG_GAP;
-    spawn('rung', { w: 240, h: 2, lane: 0 });
+    spawn('rung', { w: 300, h: 3, lane: 0 });
   }
   if (g.odo >= g.nextObs) {
     const gap = g.t > 40 ? OBS_GAP_LATE : OBS_GAP;
@@ -570,9 +576,9 @@ function step(dt) {
 function render(dt) {
   // runner — leans into the lane change, which is the only move he has
   const leanX = (STAGE_W / 2 + g.lane * LANE_X) - g.laneX;
-  el.runner.style.transform = 'translate(' + (g.laneX - 22).toFixed(1) + 'px, 300px) rotate(' +
+  el.runner.style.transform = 'translate(' + (g.laneX - 29).toFixed(1) + 'px, 436px) rotate(' +
     clamp(leanX * -0.06, -7, 7).toFixed(1) + 'deg)';
-  el.speedTag.style.transform = 'translate(' + (g.laneX - 52).toFixed(1) + 'px, 292px)';
+  el.speedTag.style.transform = 'translate(' + (g.laneX - 58).toFixed(1) + 'px, 424px)';
 
   // pursuer — closes on the runner as proximity fills (mockup 2a at 62%: bottom 74, 119 x 190)
   const w = lerp(101, 87, g.prox);

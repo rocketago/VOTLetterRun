@@ -95,7 +95,20 @@ body.framed #bezel {
 #floor {
   position: absolute;
   inset: 0;
-  background: var(--tunnel-dark) url('assets/bg_floor.jpg') center / cover no-repeat;
+  background: var(--tunnel-dark) url('assets/bg_aisle.jpg') center / cover no-repeat;
+}
+
+/* The aisle is bright at the far end and pale underfoot, so the chrome needs
+   its own ground to sit on. Scrims top and bottom, behind everything else. */
+#scrimTop, #scrimBottom { position: absolute; left: 0; right: 0; pointer-events: none; }
+#scrimTop {
+  top: 0; height: 240px;
+  background: linear-gradient(180deg, rgba(8, 10, 14, .94) 0%, rgba(8, 10, 14, .86) 34%,
+                                      rgba(8, 10, 14, .5) 68%, rgba(8, 10, 14, 0) 100%);
+}
+#scrimBottom {
+  bottom: 0; height: 130px;
+  background: linear-gradient(0deg, rgba(8, 10, 14, .78), rgba(8, 10, 14, 0));
 }
 
 #world { position: absolute; inset: 0; }
@@ -104,7 +117,8 @@ body.framed #bezel {
 .ent { position: absolute; left: 0; top: 0; transform-origin: bottom center; will-change: transform; }
 .ent > i { display: block; width: 100%; height: 100%; background: center / contain no-repeat; image-rendering: pixelated; }
 .ent.pickup > i { animation: bob 1s ease-in-out infinite; }
-.ent.rung { background: linear-gradient(90deg, rgba(242,169,59,0), rgba(242,169,59,.30), rgba(242,169,59,0)); }
+/* Floor seams rushing past — the only thing selling speed on a static plate. */
+.ent.rung { background: linear-gradient(90deg, rgba(74,58,36,0), rgba(74,58,36,.34), rgba(74,58,36,0)); }
 
 /* Pickups: the bag you want, and the booster that buys you six seconds. */
 .ent.vax > i, .ent.tyl > i { animation: bob .8s ease-in-out infinite; }
@@ -112,7 +126,7 @@ body.framed #bezel {
 .ent.tyl { filter: drop-shadow(0 0 6px rgba(242, 169, 59, .75)); }
 
 /* Runner — fixed screen depth, mockup 2a: top 300, 54 x 88. */
-#runner { left: 0; top: 0; width: 44px; height: 88px; }
+#runner { left: 0; top: 0; width: 58px; height: 116px; }
 /* One file per frame — game.js swaps background-image, so there is no
    sheet geometry here and a single pose can be replaced on its own. */
 #runner > i { background-size: 100% 100%; }
@@ -121,7 +135,8 @@ body.framed #bezel {
 
 #speedTag {
   position: absolute; left: 0; top: 0;
-  font-family: var(--pixel); font-size: 6px; color: var(--paper);
+  font-family: var(--pixel); font-size: 7px; color: #FFF3D8;
+  text-shadow: 0 0 5px #06070A, 0 1px 0 #06070A, 0 -1px 0 #06070A;
   display: none; white-space: nowrap;
 }
 
@@ -136,7 +151,8 @@ body.framed #bezel {
 
 #labelTag {
   position: absolute; left: 0; top: 0;
-  font-family: var(--pixel); font-size: 6px; color: var(--green);
+  font-family: var(--pixel); font-size: 7px; color: #DFF3C2;
+  text-shadow: 0 0 5px #12290A, 0 1px 0 #12290A, 0 -1px 0 #12290A;
   display: none; white-space: nowrap;
 }
 
@@ -208,9 +224,9 @@ body.framed #bezel {
 .banner-cap { margin-top: 10px; font-family: var(--serif); font-style: italic; font-size: 12px; color: var(--slate-lit); }
 
 #pickupFlash {
-  position: absolute; right: 26px; bottom: 300px;
+  position: absolute; right: 20px; top: 150px;
   font-family: var(--pixel); font-size: 15px; color: var(--amber);
-  text-shadow: 0 2px 0 var(--shadow);
+  text-shadow: 0 0 6px #06070A, 0 2px 0 #06070A, 0 -1px 0 #06070A;
   opacity: 0;
 }
 #pickupFlash.on { animation: rise .7s ease-out 1; }
@@ -231,8 +247,8 @@ body.framed #bezel {
 
 /* ────────────────────────────────────────────── 2c · caught */
 
-#caught { background: var(--tunnel-dark) url('assets/bg_floor.jpg') center / cover no-repeat; }
-.caught-wash { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(42, 27, 28, .72), rgba(10, 7, 9, .9)); }
+#caught { background: var(--tunnel-dark) url('assets/bg_aisle.jpg') center / cover no-repeat; }
+.caught-wash { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(38, 22, 22, .93), rgba(8, 6, 8, .96)); }
 .caught-rule { position: absolute; left: 0; right: 0; top: 0; height: 5px; background: var(--red); }
 
 .caught-head { position: absolute; top: 84px; left: 0; right: 0; text-align: center; }
@@ -296,21 +312,23 @@ button { font: inherit; border: 0; margin: 0; cursor: pointer; }
 
 /* ────────────────────────────────────────────── 2d · title */
 
-#title { background: var(--tunnel-dark) url('assets/bg_walls.jpg') center / cover no-repeat; }
+#title { background: var(--tunnel-dark) url('assets/bg_aisle.jpg') center / cover no-repeat; }
 .title-wash {
   position: absolute; inset: 0;
-  background: linear-gradient(180deg, rgba(11, 13, 18, .5) 0%, rgba(11, 13, 18, 0) 34%, rgba(11, 13, 18, .72) 100%);
+  background: linear-gradient(180deg, rgba(8, 10, 14, .92) 0%, rgba(8, 10, 14, .8) 22%,
+                                      rgba(8, 10, 14, .28) 46%, rgba(8, 10, 14, .55) 74%,
+                                      rgba(8, 10, 14, .9) 100%);
 }
 .title-head { position: absolute; top: 64px; left: 0; right: 0; text-align: center; }
 .title-logo { font-family: var(--pixel); font-size: 34px; line-height: 1.5; color: var(--newsprint); text-shadow: 0 4px 0 var(--shadow); }
 .title-cap { font-family: var(--serif); font-style: italic; font-size: 14px; color: var(--slate-lit); margin-top: 20px; }
 
 #titleRunner {
-  left: 195px; top: 326px; transform: translateX(-50%); width: 39px; height: 78px;
+  left: 195px; top: 330px; transform: translateX(-50%); width: 39px; height: 78px;
 }
 #titleRunner > i { background-size: 100% 100%; }
 #titlePursuer {
-  left: 195px; bottom: 244px; transform: translateX(-50%); width: 83px; height: 172px;
+  left: 195px; bottom: 250px; transform: translateX(-50%); width: 82px; height: 170px;
 }
 #titlePursuer > i { background-image: url('assets/pursuer_run.png'); background-size: 800% 100%; animation: sheet .78s steps(8, jump-none) infinite; }
 
@@ -324,8 +342,8 @@ button { font: inherit; border: 0; margin: 0; cursor: pointer; }
 
 /* ────────────────────────────────────────────── leaderboard / how to play */
 
-#board, #howtoPanel { background: var(--tunnel-dark) url('assets/bg_walls.jpg') center / cover no-repeat; }
-.board-wash { position: absolute; inset: 0; background: rgba(8, 10, 14, .88); }
+#board, #howtoPanel { background: var(--tunnel-dark) url('assets/bg_aisle.jpg') center / cover no-repeat; }
+.board-wash { position: absolute; inset: 0; background: rgba(8, 10, 14, .94); }
 .board-head { position: absolute; top: 64px; left: 22px; right: 22px; }
 .board-head .back { position: absolute; top: -34px; left: 0; padding-left: 0; }
 .board-title { font-family: var(--pixel); font-size: 18px; color: var(--newsprint); }

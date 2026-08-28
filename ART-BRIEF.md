@@ -14,8 +14,21 @@ uniform, feet-aligned cells.
 | File | Size 1× | Frames | What it is |
 | --- | --- | --- | --- |
 | `obs_01.png` … `obs_54.png` | 54 × 54 | 1 | The 54 obstacle types. Currently flat colour-coded squares from `tools/draw_obstacles.py`. Real sprites can be any aspect — set the per-type size in `OBSTACLE_ART` in `game.js` when they land. |
-| `bg_aisle_floor.png` | 390 × 844 | tiling | Supermarket aisle floor: three lanes converging on a vanishing point at top centre, linoleum, seamless vertically. Replaces `bg_floor.jpg`. |
-| `bg_aisle_shelves.png` | 390 × 844 | tiling | The same aisle seen with shelving down both sides, for the title screen. Replaces `bg_walls.jpg`. |
+
+## The background
+
+`assets/bg_aisle.jpg` (768 × 1376) is the real art, used on every screen and
+drawn with `background-size: cover`, which crops ~40px off each side.
+
+Its geometry drives the whole world. Measured off the plate after that crop:
+the shelf bases converge at **(195, 282.5)** in stage coordinates, and the
+aisle's half-width grows by **0.588px** for every px below that line. Those two
+numbers are `HORIZON_Y` and `AISLE_SPREAD` in `game.js`; the lane spacing is
+derived from them, so the three lanes sit inside the shelves at whatever depth
+the runner stands. Replacing the plate means re-measuring both.
+
+The plate is bright at the far end and pale underfoot, so the HUD sits on
+scrims (`#scrimTop`, `#scrimBottom`) rather than directly on the art.
 
 ## The runner: one file per frame
 
