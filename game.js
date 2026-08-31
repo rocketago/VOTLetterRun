@@ -97,15 +97,64 @@ const SPRITES = {
   vax:     { img: 'pickup_vax.png',     w: 25, h: 30 },     // a dose: one extra life
   tyl:     { img: 'pickup_tylenol.png', w: 25, h: 30 },     // Tylenol: double speed
 };
-// 54 obstacle types. Placeholder art for now: one flat colour-coded square
-// each, drawn by tools/draw_obstacles.py. They all share a square footprint,
-// so a single size covers the set; real sprites can vary per type later.
-const OBSTACLE_COUNT = 54;
-const OBSTACLE_SIZE = 54;
-const OBSTACLE_ART = Array.from({ length: OBSTACLE_COUNT }, (_, i) => {
-  const n = 'obs_' + String(i + 1).padStart(2, '0');
-  return [n, OBSTACLE_SIZE, OBSTACLE_SIZE];
-});
+// The FDA-recall aisle: 50 food items, cut from the sheet by
+// tools/slice_sheets.py using the cell map in tools/food_sheet_map.txt.
+// Each is scaled so its long side is 58 at z = 1; the aspect is the art's own,
+// so a cucumber lies flat and a milk jug stands up. Collision is lane-and-depth,
+// not pixels, so these sizes are purely how big the thing reads.
+const OBSTACLE_ART = [
+  ['obs_bacon', 58.0, 49.5],
+  ['obs_bacon_strips', 58.0, 55.2],
+  ['obs_bean_soup', 58.0, 47.8],
+  ['obs_berries', 52.9, 58.0],
+  ['obs_blueberries', 53.5, 58.0],
+  ['obs_bread', 58.0, 43.8],
+  ['obs_breakfast_burrito', 58.0, 47.2],
+  ['obs_brie', 58.0, 50.6],
+  ['obs_burrito', 58.0, 48.9],
+  ['obs_buttermilk', 30.1, 58.0],
+  ['obs_cabbage', 58.0, 56.3],
+  ['obs_cauliflower', 58.0, 46.1],
+  ['obs_cheese_wheel', 58.0, 44.4],
+  ['obs_chicken', 58.0, 48.3],
+  ['obs_cucumber', 58.0, 46.1],
+  ['obs_deli_meat', 58.0, 43.8],
+  ['obs_eggs', 58.0, 55.2],
+  ['obs_formula', 28.4, 58.0],
+  ['obs_frozen_veg', 53.5, 58.0],
+  ['obs_ground_beef', 58.0, 44.4],
+  ['obs_ham_hock', 58.0, 48.9],
+  ['obs_mackerel', 58.0, 45.5],
+  ['obs_milk_jug', 39.2, 58.0],
+  ['obs_noodle_soup', 58.0, 50.0],
+  ['obs_pasta_salad', 58.0, 48.9],
+  ['obs_peppers', 58.0, 45.5],
+  ['obs_pesto', 35.3, 58.0],
+  ['obs_pie', 58.0, 43.2],
+  ['obs_pizza', 58.0, 55.7],
+  ['obs_pork_chops', 58.0, 47.8],
+  ['obs_powdered_milk', 43.2, 58.0],
+  ['obs_prosciutto', 58.0, 43.2],
+  ['obs_quiche', 58.0, 52.3],
+  ['obs_roast_ham', 58.0, 44.4],
+  ['obs_salmon', 58.0, 40.9],
+  ['obs_sandwich', 58.0, 51.2],
+  ['obs_sauce_pot', 58.0, 52.9],
+  ['obs_sausage_ring', 58.0, 45.5],
+  ['obs_sausages', 56.9, 58.0],
+  ['obs_shrimp_wrap', 58.0, 46.6],
+  ['obs_smoothie', 29.0, 58.0],
+  ['obs_spaghetti', 58.0, 42.6],
+  ['obs_spinach', 54.0, 58.0],
+  ['obs_steak', 58.0, 40.4],
+  ['obs_swiss', 58.0, 58.0],
+  ['obs_tofu', 58.0, 56.9],
+  ['obs_tofu_feta', 58.0, 51.2],
+  ['obs_tv_dinner', 58.0, 48.3],
+  ['obs_whole_fish', 58.0, 35.3],
+  ['obs_wrap', 58.0, 44.4],
+];
+const OBSTACLE_COUNT = OBSTACLE_ART.length;
 const OBSTACLES = OBSTACLE_ART.map(([n]) => n);
 const CHIP_BAGS = ['chips', 'chipsB', 'chipsG'];
 OBSTACLE_ART.forEach(([n, w, h]) => { SPRITES[n] = { img: n + '.png', w, h }; });
@@ -739,6 +788,6 @@ if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
 preload();
 
 // Handy for tuning / verification runs.
-window.SnackRun = { g, S, get mode() { return mode; }, startRun, toCaught, toTitle, toBoard, move, powerUp, ents: () => ents };
+window.SnackRun = { g, S, SPRITES, OBSTACLES, get mode() { return mode; }, startRun, toCaught, toTitle, toBoard, move, powerUp, ents: () => ents };
 
 })();

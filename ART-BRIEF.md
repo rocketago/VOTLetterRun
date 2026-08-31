@@ -11,27 +11,34 @@ uniform, feet-aligned cells.
 
 ## Still needed
 
-| File | Size 1× | Frames | What it is |
-| --- | --- | --- | --- |
-| `obs_01.png` … `obs_54.png` | 54 × 54 | 1 | The 54 obstacle types. Currently flat colour-coded squares from `tools/draw_obstacles.py`. Real sprites can be any aspect — set the per-type size in `OBSTACLE_ART` in `game.js` when they land. |
+| File | What it is |
+| --- | --- |
+| `tex_aisle_ring.png` | **The corridor.** The pink/blue test image. See *The corridor* below — it is the one file with a hard geometric requirement. |
+| `pickup_vax.png` | The vaccine dose. Drawn by `tools/draw_placeholders.py`. |
+| `pickup_tylenol.png` | The Tylenol bottle. Also drawn in code. |
 
-## The background
+Everything else is real art: the runner's eight frames, the pursuer's run
+strip, the three chip bags, and all 50 recalled food items. Full sizes are in
+the inventory at the bottom.
 
-`assets/bg_aisle.jpg` (768 × 1376) is the real art, used on every screen and
-drawn with `background-size: cover`, which crops ~40px off each side.
+## The menu backdrop
 
-Its geometry drives the whole world. Measured off the plate after that crop:
-the shelf bases converge at **(195, 282.5)** in stage coordinates, and the
-aisle's half-width grows by **0.588px** for every px below that line. Those two
-numbers are `HORIZON_Y` and `AISLE_SPREAD` in `game.js`; the lane spacing is
-derived from them, so the three lanes sit inside the shelves at whatever depth
-the runner stands. Replacing the plate means re-measuring both.
+`assets/bg_aisle.jpg` (768 × 1376) is the still plate behind the title, caught,
+leaderboard and how-to screens, drawn with `background-size: cover`. It is not
+in the run any more, so its geometry no longer constrains anything — swap it
+freely.
 
-The plate is bright at the far end and pale underfoot, so the HUD sits on
+## The corridor
+
+The run's background is a single self-similar image,
+`assets/tex_aisle_ring.png`, zoomed about its vanishing point. **This is
+placeholder art and needs replacing.** Its geometry drives the whole world: the
+vanishing point is `HORIZON_Y` and the rate the aisle widens below it is
+`AISLE_SPREAD`, and the three lanes are derived from those, so they sit inside
+the shelves at whatever depth the runner stands.
+
+The corridor is bright at the far end and pale underfoot, so the HUD sits on
 scrims (`#scrimTop`, `#scrimBottom`) rather than directly on the art.
-
-The corridor is now a single self-similar image, `assets/tex_aisle_ring.png`,
-zoomed about its vanishing point. This is placeholder art and needs replacing.
 
 The property the whole effect rests on: **the image's centre must be a
 transparent hole whose shape matches the frame, centred on the frame centre.**
@@ -138,9 +145,17 @@ Sizes above are the sprite's size **at the runner's depth**; the perspective
 scales everything from about 0.24× at spawn to 2.4× as it passes the camera,
 so author with headroom.
 
-`tools/food_sheet_map.txt` holds the cell-index to name mapping for the 9 × 6
-food item sheet, if that art gets used for the obstacles later — one command
-re-cuts all 50 items.
+The 50 obstacles are the food sheet, already in. `tools/food_sheet_map.txt`
+holds the cell-index to name mapping for the 9 × 6 grid, so one command re-cuts
+the whole set if the sheet is redrawn:
+
+```
+python3 tools/slice_sheets.py food SHEET.png --pick $(grep -v '^#' tools/food_sheet_map.txt | tr '\n' ' ')
+```
+
+Each is then scaled so its long side is 58 at the runner's depth, keeping the
+art's own aspect — that table is `OBSTACLE_ART` in `game.js`. Collision is
+lane-and-depth, not pixels, so those sizes only decide how big a thing reads.
 
 ## Gone
 
