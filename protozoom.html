@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Snack Run — infinite zoom prototype</title>
+<style>
+/* Prototype 2: one self-similar corridor image, zoomed about its vanishing
+   point. The image's centre is a transparent hole whose shape matches the
+   frame, so scaling by RATIO lays the picture exactly onto itself — the loop
+   closes with no cross-fade. Several copies are stacked a doubling apart so
+   you can see through the hole into the distance, and a radial whiteout hides
+   the deepest one, which is where the recursion has to stop. */
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; background: #05060A; overflow: hidden;
+             font: 12px/1.5 ui-monospace, monospace; color: #EFEAE0; }
+#viewport { position: fixed; inset: 0; }
+#stage {
+  position: absolute; left: 50%; top: 50%; width: 390px; height: 844px;
+  margin: -422px 0 0 -195px; overflow: hidden; background: #fff;
+  transform: scale(var(--s,1));
+}
+.ring {
+  position: absolute; inset: 0;
+  background: url('assets/tex_aisle_ring.png') center / 100% 100% no-repeat;
+  transform-origin: 50% 50%;
+  will-change: transform;
+}
+#haze {
+  position: absolute; inset: 0; pointer-events: none;
+  background: radial-gradient(circle at 50% 50%,
+    #fff 0%, #fff 5%, rgba(255,255,255,.92) 9%, rgba(255,255,255,.55) 15%,
+    rgba(255,255,255,.18) 24%, rgba(255,255,255,0) 38%);
+}
+#hud { position: absolute; left: 0; right: 0; bottom: 0; padding: 10px 14px;
+       background: rgba(8,10,14,.72); font-size: 11px; letter-spacing: .06em; }
+#hud b { color: #F2A93B; }
+</style>
+</head>
+<body>
+<div id="viewport"><div id="stage">
+  <div id="rings"></div>
+  <div id="haze"></div>
+  <div id="hud">infinite zoom — <b id="spd">1.0x</b> · <b>1–4</b> speed, <b>0</b> stop</div>
+</div></div>
+<script>
+// Measured per axis: the hole is very slightly off the frame's aspect, so a
+// uniform scale cannot map it exactly. Scaling each axis by its own ratio can.
+const RATIO_X = 2.0131;
+const RATIO_Y = 2.0080;
+const RATIO = Math.sqrt(RATIO_X * RATIO_Y);   // for pacing only
+const RINGS = 8;       // how many doublings of depth are stacked
+const BASE  = 0.62;    // cycles (doublings) per second at 1x
+// Every ring is drawn a few percent oversized. Without it, the ring whose hole
+// has grown to frame size leaves a hairline of wall colour around the border at
+// the moment the loop wraps; the overscan pushes that edge off-screen.
+const OVERSCAN = 1.04;
+
+const stage = document.getElementById('stage');
+const wrap  = document.getElementById('rings');
+const rings = [];
+for (let i = 0; i < RINGS; i++) {
+  const d = document.createElement('div');
+  d.className = 'ring';
+  wrap.appendChild(d);
+  rings.push(d);
+}
+// nearest ring last, so it paints over the ones behind it
+rings.reverse().forEach(r => wrap.appendChild(r));
+
+function fit() {
+  stage.style.setProperty('--s', Math.min(innerWidth / 390, innerHeight / 844));
+}
+addEventListener('resize', fit); fit();
+
+let phase = 0, speed = 1, last = performance.now();
+addEventListener('keydown', e => {
+  if ('01234'.includes(e.key)) { speed = +e.key; document.getElementById('spd').textContent = speed.toFixed(1) + 'x'; }
+});
+
+function frame(now) {
+  requestAnimationFrame(frame);
+  const dt = Math.min(0.05, (now - last) / 1000); last = now;
+  phase = (phase + speed * BASE * dt) % 1;
+  // Ring k sits k doublings further away. Recomputing from phase every frame
+  // means the wrap needs no special handling: at phase 1 the set of scales is
+  // the same set as at phase 0, shifted by one ring.
+  for (let k = 0; k < RINGS; k++) {
+    const e = phase - k;
+    rings[RINGS - 1 - k].style.transform =
+      'scale(' + (OVERSCAN * Math.pow(RATIO_X, e)).toFixed(5) + ',' +
+                 (OVERSCAN * Math.pow(RATIO_Y, e)).toFixed(5) + ')';
+  }
+}
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
