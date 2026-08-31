@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Snack Run — 3D world prototype</title>
+<style>
+/* Prototype: the aisle as real CSS 3D geometry rather than a perspective
+   painting. Four textured planes in a 3D scene; running forward is just
+   scrolling each plane's texture along its own depth axis. The browser does
+   the perspective, so growth, tiling and speed are all exact. */
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; background: #05060A; overflow: hidden;
+             font: 12px/1.5 ui-monospace, monospace; color: #EFEAE0; }
+#viewport { position: fixed; inset: 0; }
+#stage {
+  position: absolute; left: 50%; top: 50%; width: 390px; height: 844px;
+  margin: -422px 0 0 -195px;
+  overflow: hidden; background: #F6F3E8;
+  transform: scale(var(--s,1));
+  perspective: var(--persp);
+  perspective-origin: 50% var(--horizon);
+}
+#scene { position: absolute; inset: 0; transform-style: preserve-3d; }
+
+.plane { position: absolute; left: 50%; top: var(--horizon); transform-origin: 50% 0; }
+
+#floor {
+  width: var(--aisle); height: var(--len); margin-left: calc(var(--aisle) / -2);
+  transform: translateY(var(--cam)) rotateX(-90deg) translateY(calc(-1 * var(--near)));
+  background: url('assets/tex_floor.png') repeat;
+  background-size: var(--tile) var(--tile);
+}
+#ceiling {
+  width: var(--aisle); height: var(--len); margin-left: calc(var(--aisle) / -2);
+  transform: translateY(calc(var(--cam) - var(--ceilh))) rotateX(90deg) translateY(calc(-1 * var(--near)));
+  background: url('assets/tex_ceiling.png') repeat;
+  background-size: var(--tile) var(--tile);
+}
+.wall {
+  width: var(--len); height: var(--ceilh);
+  transform-origin: 0 0;
+  background: url('assets/tex_shelf.png') repeat-x;
+  background-size: var(--bay) 100%;
+}
+#wallL { margin-left: calc(var(--aisle) / -2);
+         transform: translateY(calc(var(--cam) - var(--ceilh))) rotateY(-90deg) translateX(calc(-1 * var(--near))); }
+#wallR { margin-left: calc(var(--aisle) / 2);
+         transform: translateY(calc(var(--cam) - var(--ceilh))) rotateY(90deg) scaleX(-1) translateX(calc(-1 * var(--near)));
+         transform-origin: 0 0; }
+
+.bb { position: absolute; left: 50%; top: var(--horizon); transform-origin: 50% 100%;
+      image-rendering: pixelated; background-repeat: no-repeat; background-size: 100% 100%; }
+
+#hud { position: absolute; left: 0; right: 0; bottom: 0; padding: 10px 14px;
+       background: rgba(8,10,14,.72); font-size: 11px; letter-spacing: .06em; }
+#hud b { color: #F2A93B; }
+</style>
+</head>
+<body>
+<div id="viewport"><div id="stage">
+  <div id="scene">
+    <div class="plane" id="ceiling"></div>
+    <div class="plane" id="floor"></div>
+    <div class="plane wall" id="wallL"></div>
+    <div class="plane wall" id="wallR"></div>
+  </div>
+  <div id="hud">3D world prototype — <b id="spd">1.0x</b> speed · press <b>1–4</b> to change speed, <b>0</b> to stop</div>
+</div></div>
+
+<script>
+const S = getComputedStyle(document.documentElement);
+const cfg = {
+  persp: 320,      // camera distance
+  horizon: 372,    // where the vanishing point lands on screen
+  aisle: 300,      // aisle width in world units
+  cam: 120,        // camera height above the floor
+  ceilh: 300,      // floor-to-ceiling
+  len: 4600,       // how far the planes run
+  near: 600,       // how far each plane reaches back past the camera
+  tile: 100,       // world size of one floor/ceiling tile
+  bay: 340,        // world length of one shelf bay
+};
+const root = document.getElementById('stage');
+for (const [k, v] of Object.entries(cfg)) root.style.setProperty('--' + k, v + (k === 'persp' ? 'px' : 'px'));
+
+function fit() {
+  const s = Math.min(window.innerWidth / 390, window.innerHeight / 844);
+  root.style.setProperty('--s', s);
+}
+addEventListener('resize', fit); fit();
+
+const floor = document.getElementById('floor');
+const ceiling = document.getElementById('ceiling');
+const wallL = document.getElementById('wallL');
+const wallR = document.getElementById('wallR');
+
+let dist = 0, speed = 1, last = performance.now();
+const BASE = 260;                       // world units per second at 1x
+
+addEventListener('keydown', (e) => {
+  if ('01234'.includes(e.key)) { speed = +e.key; document.getElementById('spd').textContent = speed.toFixed(1) + 'x'; }
+});
+
+function frame(now) {
+  requestAnimationFrame(frame);
+  const dt = Math.min(0.05, (now - last) / 1000); last = now;
+  dist += speed * BASE * dt;
+
+  // Every plane scrolls along its own depth axis. The floor and ceiling are
+  // rotated about X so their local Y runs into the distance; the walls are
+  // rotated about Y so their local X does.
+  const f = -(dist % cfg.tile) + 'px';
+  floor.style.backgroundPosition   = '0 ' + f;
+  ceiling.style.backgroundPosition = '0 ' + f;
+  const w = -(dist % cfg.bay) + 'px';
+  wallL.style.backgroundPosition = w + ' 0';
+  wallR.style.backgroundPosition = w + ' 0';
+}
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
