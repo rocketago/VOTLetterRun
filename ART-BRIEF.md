@@ -30,23 +30,31 @@ the runner stands. Replacing the plate means re-measuring both.
 The plate is bright at the far end and pale underfoot, so the HUD sits on
 scrims (`#scrimTop`, `#scrimBottom`) rather than directly on the art.
 
-`assets/bg_aisle_floor.png` is the floor on its own, with alpha, on the same
-canvas. It is the layer that scrolls. Its transverse tile seams are spaced
-**geometrically** below its vanishing point — each seam sits `FLOOR_RATIO`
-(1.2816) further out than the last — which is what makes the loop possible:
-scaling the plate by exactly that ratio puts every seam where the next one
-was. Scaling about the vanishing point also leaves every line *through* that
-point untouched, so the lane lines stay put while only the seams move, which
-is exactly what walking down an aisle looks like.
+The aisle is drawn in three layers, all on the same 768 x 1376 canvas and all
+`background-size: cover`:
 
-Two copies run half a cycle apart with `sin²`/`cos²` opacities, so they sum to
-1 and whichever layer is about to jump is invisible when it does. Its top edge
-was feathered over 70px so the far end dissolves into the plate underneath
-rather than showing a moving boundary.
+| File | What it is |
+| --- | --- |
+| `assets/bg_aisle_floor.png` | the floor, with its two painted lane lines |
+| `assets/bg_aisle_shelves.png` | the shelving down both sides, over the floor |
+| `assets/bg_aisle.jpg` | the two flattened onto cream, for the menu screens |
 
-If this art is regenerated, keep the seams geometric and re-measure the ratio.
-Evenly spaced seams — what a real tiled floor would have — cannot loop this
-way.
+The floor plate's tile seams are spaced **evenly in depth** — physically
+correct perspective. That means the plate cannot be looped by scaling it (an
+earlier version of this art happened to be spaced geometrically, which could).
+So the seams were stripped out of the art, and the game spawns them as
+travelling entities instead, every `SEAM_GAP` (0.30) z units, which is the
+plate's own tile spacing measured back into game units. They then move at
+exactly the speed everything else does, because they *are* everything else.
+
+The painted lane lines stay in the plate and never move, which is correct:
+lines running down the aisle do not move as you walk along it. Only the
+transverse seams do.
+
+**If this art is regenerated:** re-measure the vanishing point and the spread
+(`HORIZON_Y` and `AISLE_SPREAD` in `game.js`), and leave the transverse seams
+out of the floor plate entirely — the game draws them. Seam spacing no longer
+constrains anything.
 
 ## The runner: one file per frame
 

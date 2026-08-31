@@ -92,10 +92,19 @@ body.framed #bezel {
 
 #field { position: absolute; inset: 0; overflow: hidden; }
 
+/* The aisle in three layers: the lit far end, the floor with its lane lines,
+   and the shelving over the top. The floor's transverse seams were stripped
+   out of the art — they are spawned as travelling entities instead, so they
+   move at exactly the speed everything else does. */
 #floor {
-  position: absolute;
-  inset: 0;
-  background: var(--tunnel-dark) url('assets/bg_aisle.jpg') center / cover no-repeat;
+  position: absolute; inset: 0;
+  background: #F6F3E8 url('assets/bg_aisle_floor.png') center / cover no-repeat;
+}
+#seams { position: absolute; inset: 0; }
+#shelves {
+  position: absolute; inset: 0;
+  background: url('assets/bg_aisle_shelves.png') center / cover no-repeat;
+  pointer-events: none;
 }
 
 /* The aisle is bright at the far end and pale underfoot, so the chrome needs
@@ -111,28 +120,16 @@ body.framed #bezel {
   background: linear-gradient(0deg, rgba(8, 10, 14, .78), rgba(8, 10, 14, 0));
 }
 
-/* The scrolling floor. Two copies of the same plate, half a cycle apart,
-   each scaled about the floor's own vanishing point. Scaling about that point
-   leaves every line through it — the lane lines — exactly where it is, and
-   marches the transverse tile seams toward the camera, which is precisely what
-   moving down the aisle looks like. Their opacities are sin^2 and cos^2 of the
-   same phase, so they sum to 1 and each one is invisible at the moment it
-   jumps back. */
-.floor-scroll {
-  position: absolute; inset: 0;
-  background: url('assets/bg_aisle_floor.png') center / cover no-repeat;
-  transform-origin: 194px 297px;
-  will-change: transform, opacity;
-}
-
 #world { position: absolute; inset: 0; }
 
 /* Travelling entities: sized at their runner-depth size, scaled by perspective. */
 .ent { position: absolute; left: 0; top: 0; transform-origin: bottom center; will-change: transform; }
 .ent > i { display: block; width: 100%; height: 100%; background: center / contain no-repeat; image-rendering: pixelated; }
 .ent.pickup > i { animation: bob 1s ease-in-out infinite; }
-/* Floor seams rushing past — the only thing selling speed on a static plate. */
-.ent.rung { background: linear-gradient(90deg, rgba(74,58,36,0), rgba(74,58,36,.34), rgba(74,58,36,0)); }
+/* Tile seams, spawned at the plate's own spacing and travelling with everything
+   else. Sampled from the art: darker at the far end, warmer up close. */
+.ent.rung { background: linear-gradient(90deg, rgba(83,50,35,.12), rgba(61,32,17,.58) 12%,
+                                              rgba(61,32,17,.58) 88%, rgba(83,50,35,.12)); }
 
 /* Pickups: the bag you want, and the booster that buys you six seconds. */
 .ent.vax > i, .ent.tyl > i { animation: bob .8s ease-in-out infinite; }
@@ -261,7 +258,7 @@ body.framed #bezel {
 
 /* ────────────────────────────────────────────── 2c · caught */
 
-#caught { background: var(--tunnel-dark) url('assets/bg_aisle.jpg') center / cover no-repeat; }
+#caught { background: #F6F3E8 url('assets/bg_aisle.jpg') center / cover no-repeat; }
 .caught-wash { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(38, 22, 22, .93), rgba(8, 6, 8, .96)); }
 .caught-rule { position: absolute; left: 0; right: 0; top: 0; height: 5px; background: var(--red); }
 

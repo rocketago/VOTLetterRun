@@ -19,18 +19,18 @@
 
 const STAGE_W = 390, STAGE_H = 844;
 
-// Measured off bg_aisle.jpg after `background-size: cover` into the 390 x 844
-// stage: the shelf bases converge at (195, 282.5), and the aisle's half-width
-// grows by 0.588px for every px below that.
-const HORIZON_Y      = 282.5;
-const AISLE_SPREAD   = 0.588;
+// Measured off the floor plate after `background-size: cover` into the
+// 390 x 844 stage: its lane lines and tile seams converge at (195, 372.6), and
+// the aisle's half-width grows by 0.8635px for every px below that.
+const HORIZON_Y      = 372.6;
+const AISLE_SPREAD   = 0.8635;
 const RUNNER_FEET_Y  = 552;   // his depth; the aisle is ~317px wide here
 const RUNNER_H       = 116;   // so his top edge sits at 436
 const PERSP          = RUNNER_FEET_Y - HORIZON_Y;
 // Three lanes across the aisle at the runner's depth, so the shelves bound them.
 const LANE_X         = Math.round(AISLE_SPREAD * PERSP * 2 / 3);
 const Z_SPAWN        = 4.2;   // just under the vanishing point
-const Z_EXIT         = 0.40;  // past the camera
+const Z_EXIT         = 0.30;  // past the camera, below the bottom edge
 const Z_RUNNER       = 1;
 
 const SPEED_BASE = 2.0;       // z units per second
@@ -66,21 +66,11 @@ const POWERUP_MS   = 6000;
 const OBS_GAP      = [1.7, 2.9];     // z units between obstacles, early
 const OBS_GAP_LATE = [1.25, 2.1];
 const PICKUP_GAP   = [1.1, 2.3];
-const RUNG_GAP     = 0.55;
+const SEAM_GAP     = 0.30;           // the floor plate's own tile spacing, in z
 
 // Sizes are the sprite's size at the runner's depth (z = 1); perspective does the rest.
 // The runner is one file per frame, so a single pose can be redrawn and
 // dropped in on its own. Bump RUNNER_FRAMES if the cycle gains or loses one.
-// The floor plate's tile seams are spaced geometrically below its vanishing
-// point, by this ratio. Scaling the plate by exactly this puts every seam
-// where the next one was, so the loop closes.
-const FLOOR_RATIO = 1.2816;
-// One cycle advances the floor by one tile row, i.e. multiplies depth by
-// FLOOR_RATIO. Entities move through depth linearly, so the two can only agree
-// at one depth; matching them at the runner's own depth puts the tiles under
-// his feet at exactly his speed, which is where the eye judges it.
-const FLOOR_CYCLES_PER_Z = 1 / Math.log(FLOOR_RATIO);
-
 const RUNNER_FRAMES = 8;
 const RUNNER_FRAME_MS = 78;          // ~12.8 fps
 const RUNNER_FRAME_MS_FAST = 52;     // while Tylenol is up
@@ -110,7 +100,7 @@ const CHIP_BAGS = ['chips', 'chipsB', 'chipsG'];
 OBSTACLE_ART.forEach(([n, w, h]) => { SPRITES[n] = { img: n + '.png', w, h }; });
 
 const ASSETS = [
-  'assets/bg_aisle.jpg', 'assets/bg_aisle_floor.png',
+  'assets/bg_aisle.jpg', 'assets/bg_aisle_floor.png', 'assets/bg_aisle_shelves.png',
   'assets/pursuer_run.png',
   'assets/pickup_chips.png', 'assets/pickup_chips_b.png', 'assets/pickup_chips_g.png',
   'assets/chip_drop.png',
@@ -180,7 +170,7 @@ const el = {
   runner: $('runner'), pursuer: $('pursuer'), labelTag: $('labelTag'),
   speedTag: $('speedTag'), vignette: $('vignette'), flash: $('flash'),
   hud: $('hud'), prox: document.querySelector('.prox'), proxFill: $('proxFill'), proxState: $('proxState'),
-  floorA: $('floorA'), floorB: $('floorB'),
+  seams: $('seams'),
   bags: $('bags'), lives: $('lives'), dist: $('dist'), hiSmall: $('hiSmall'),
   delay: $('delay'), delaySecs: $('delaySecs'), delayFill: $('delayFill'),
   pickupFlash: $('pickupFlash'), hints: $('hints'),
@@ -223,7 +213,7 @@ function spawn(kind, opts) {
   } else {
     d.innerHTML = '<i style="background-image:url(assets/' + e.img + ')"></i>';
   }
-  el.world.appendChild(d);
+  (kind === 'rung' ? el.seams : el.world).appendChild(d);
   ents.push(e);
   return e;
 }
@@ -255,7 +245,6 @@ const g = {
   prox: PROX_START, meters: 0, bags: BAGS_START, lost: 0,
   pursuerX: STAGE_W / 2,
   nextObs: 0, nextPickup: 0, nextRung: 0,
-  floorPhase: 0,
   labelAt: 0, labelUntil: 0,
   lives: 0, vaxAt: 0,
   tylAt: 0, powerUntil: 0,
@@ -269,7 +258,7 @@ function resetRun() {
     t: 0, odo: 0, speed: SPEED_BASE, lane: 0, laneX: STAGE_W / 2, invuln: 0,
     prox: PROX_START, meters: 0, bags: BAGS_START, lost: 0, pursuerX: STAGE_W / 2,
     nextObs: 1.2, nextPickup: 2.4, nextRung: 0,
-    floorPhase: 0, labelAt: rand(LABEL_EVERY), labelUntil: 0,
+    labelAt: rand(LABEL_EVERY), labelUntil: 0,
     lives: 0, vaxAt: VAX_FIRST,
     tylAt: TYL_FIRST, powerUntil: 0,
   });
@@ -494,7 +483,6 @@ function step(dt) {
   g.speed = SPEED_BASE + (SPEED_MAX - SPEED_BASE) * Math.min(1, g.t / SPEED_RAMP);
   const eff = g.speed * (power ? 2 : 1);
   g.odo += eff * dt;
-  g.floorPhase = (g.floorPhase + eff * FLOOR_CYCLES_PER_Z * dt) % 1;
   g.meters += eff * dt * METERS_PER_Z;
 
   // ── proximity
@@ -514,8 +502,9 @@ function step(dt) {
 
   // ── scheduled spawns
   if (g.odo >= g.nextRung) {
-    g.nextRung = g.odo + RUNG_GAP;
-    spawn('rung', { w: 300, h: 3, lane: 0 });
+    g.nextRung = g.odo + SEAM_GAP;
+    // Full aisle width at the runner's depth; the perspective does the rest.
+    spawn('rung', { w: AISLE_SPREAD * PERSP * 2, h: 2.2, lane: 0 });
   }
   if (g.odo >= g.nextObs) {
     const gap = g.t > 40 ? OBS_GAP_LATE : OBS_GAP;
@@ -586,18 +575,7 @@ function step(dt) {
   }
 }
 
-// Advance the two floor layers. Phase 0..1 is one tile row.
-function renderFloor(p) {
-  const q = (p + 0.5) % 1;
-  const w = Math.sin(Math.PI * p);
-  el.floorA.style.transform = 'scale(' + Math.pow(FLOOR_RATIO, p).toFixed(4) + ')';
-  el.floorB.style.transform = 'scale(' + Math.pow(FLOOR_RATIO, q).toFixed(4) + ')';
-  el.floorA.style.opacity = (w * w).toFixed(3);
-  el.floorB.style.opacity = (1 - w * w).toFixed(3);
-}
-
 function render(dt) {
-  renderFloor(g.floorPhase);
   // runner — leans into the lane change, which is the only move he has
   const leanX = (STAGE_W / 2 + g.lane * LANE_X) - g.laneX;
   el.runner.style.transform = 'translate(' + (g.laneX - 29).toFixed(1) + 'px, 436px) rotate(' +
@@ -720,7 +698,6 @@ function preload() {
 }
 
 function ready() {
-  renderFloor(0);
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(fit);
   toTitle();
   raf = requestAnimationFrame(frame);
