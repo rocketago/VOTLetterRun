@@ -23,10 +23,11 @@ python3 -m http.server 8000     # then open http://localhost:8000
 - **Three lanes, and nothing else.** Changing lane is the only move. The
   runner sits at a fixed depth; everything else travels toward the camera on
   the lane it spawned in.
-- **The floor scrolls.** Its tile seams are spawned as travelling entities at
-  the plate's own spacing, so they move at exactly the speed everything else
-  does. The painted lane lines stay fixed, which is what running down an aisle
-  looks like.
+- **The world moves.** The corridor is one self-similar image zoomed about its
+  vanishing point. Its centre is a transparent hole shaped like the frame, so
+  scaling by 2 lays the picture exactly onto itself and the loop closes with no
+  cross-fade. Eight copies are stacked a doubling apart, seen through each
+  other's holes, with a radial whiteout over the deepest.
 - **Bags** are the score you carry. Loose bags on the floor add three each.
 - **Recalled food** — 54 types — costs you about a quarter of your armful and
   lets him close. Change lane or wear it.
@@ -38,6 +39,9 @@ python3 -m http.server 8000     # then open http://localhost:8000
   double speed and a sharp drop in proximity.
 
 ## Art status
+
+**The corridor is a placeholder** — the pink/blue test image, not final art.
+Everything else below still applies.
 
 The runner is real art, held as eight separate frame files
 (`assets/runner_01.png` … `runner_08.png`) so any single pose can be replaced

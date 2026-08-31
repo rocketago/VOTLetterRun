@@ -30,31 +30,34 @@ the runner stands. Replacing the plate means re-measuring both.
 The plate is bright at the far end and pale underfoot, so the HUD sits on
 scrims (`#scrimTop`, `#scrimBottom`) rather than directly on the art.
 
-The aisle is drawn in three layers, all on the same 768 x 1376 canvas and all
-`background-size: cover`:
+The corridor is now a single self-similar image, `assets/tex_aisle_ring.png`,
+zoomed about its vanishing point. This is placeholder art and needs replacing.
 
-| File | What it is |
+The property the whole effect rests on: **the image's centre must be a
+transparent hole whose shape matches the frame, centred on the frame centre.**
+Scaling the picture until the hole fills the frame then lays it exactly onto
+itself, so the loop closes with no cross-fade and no constraint on how anything
+inside is spaced. Measured on the current placeholder:
+
+| | |
 | --- | --- |
-| `assets/bg_aisle_floor.png` | the floor, with its two painted lane lines |
-| `assets/bg_aisle_shelves.png` | the shelving down both sides, over the floor |
-| `assets/bg_aisle.jpg` | the two flattened onto cream, for the menu screens |
+| frame | 924 x 2000, aspect 0.4620 |
+| hole | 459 x 996, aspect 0.4608 |
+| hole centre | within 1px of the frame centre |
+| zoom ratio | 2.0131 across, 2.0080 down |
 
-The floor plate's tile seams are spaced **evenly in depth** — physically
-correct perspective. That means the plate cannot be looped by scaling it (an
-earlier version of this art happened to be spaced geometrically, which could).
-So the seams were stripped out of the art, and the game spawns them as
-travelling entities instead, every `SEAM_GAP` (0.30) z units, which is the
-plate's own tile spacing measured back into game units. They then move at
-exactly the speed everything else does, because they *are* everything else.
+Those two ratios are `ZOOM_RATIO_X` and `ZOOM_RATIO_Y` in `game.js`, and the
+corridor's own geometry gives `HORIZON_Y` (423, the frame centre) and
+`AISLE_SPREAD` (0.4636). Replacing the art means re-measuring all four.
 
-The painted lane lines stay in the plate and never move, which is correct:
-lines running down the aisle do not move as you walk along it. Only the
-transverse seams do.
+Rings are drawn 4% oversized. Without that, the ring whose hole has grown to
+frame size leaves a hairline of wall colour around the screen border at exactly
+the moment the loop wraps.
 
-**If this art is regenerated:** re-measure the vanishing point and the spread
-(`HORIZON_Y` and `AISLE_SPREAD` in `game.js`), and leave the transverse seams
-out of the floor plate entirely — the game draws them. Seam spacing no longer
-constrains anything.
+**To draw a replacement:** a corridor in one-point perspective, vanishing point
+dead centre, with the far end left fully transparent — and the transparent
+opening must be the frame's own shape at exactly half scale. Nothing else is
+constrained; the interior can be as detailed as you like.
 
 ## The runner: one file per frame
 

@@ -92,32 +92,37 @@ body.framed #bezel {
 
 #field { position: absolute; inset: 0; overflow: hidden; }
 
-/* The aisle in three layers: the lit far end, the floor with its lane lines,
-   and the shelving over the top. The floor's transverse seams were stripped
-   out of the art — they are spawned as travelling entities instead, so they
-   move at exactly the speed everything else does. */
-#floor {
+/* The corridor is one self-similar image zoomed about its vanishing point.
+   Its centre is a transparent hole shaped like the frame, so scaling by
+   ZOOM_RATIO lays the picture exactly onto itself and the loop closes with no
+   cross-fade. Copies are stacked a doubling apart and seen through each
+   other's holes; the haze covers the deepest, where the recursion stops. */
+#rings { position: absolute; inset: 0; overflow: hidden; }
+.ring {
   position: absolute; inset: 0;
-  background: #F6F3E8 url('assets/bg_aisle_floor.png') center / cover no-repeat;
+  background: url('assets/tex_aisle_ring.png') center / 100% 100% no-repeat;
+  transform-origin: 50% 50%;
+  will-change: transform;
 }
-#seams { position: absolute; inset: 0; }
-#shelves {
-  position: absolute; inset: 0;
-  background: url('assets/bg_aisle_shelves.png') center / cover no-repeat;
-  pointer-events: none;
+#haze {
+  position: absolute; inset: 0; pointer-events: none;
+  background: radial-gradient(circle at 50% 50%,
+    #fff 0%, #fff 4%, rgba(255,255,255,.92) 8%, rgba(255,255,255,.55) 14%,
+    rgba(255,255,255,.18) 23%, rgba(255,255,255,0) 36%);
 }
 
-/* The aisle is bright at the far end and pale underfoot, so the chrome needs
-   its own ground to sit on. Scrims top and bottom, behind everything else. */
+/* The corridor is bright, so the chrome needs its own ground to sit on.
+   These must stay positioned: as static blocks they paint beneath the
+   absolutely-positioned rings and do nothing at all. */
 #scrimTop, #scrimBottom { position: absolute; left: 0; right: 0; pointer-events: none; }
 #scrimTop {
-  top: 0; height: 240px;
-  background: linear-gradient(180deg, rgba(8, 10, 14, .94) 0%, rgba(8, 10, 14, .86) 34%,
-                                      rgba(8, 10, 14, .5) 68%, rgba(8, 10, 14, 0) 100%);
+  top: 0; height: 250px;
+  background: linear-gradient(180deg, rgba(6, 8, 12, .97) 0%, rgba(6, 8, 12, .93) 40%,
+                                      rgba(6, 8, 12, .62) 74%, rgba(6, 8, 12, 0) 100%);
 }
 #scrimBottom {
   bottom: 0; height: 130px;
-  background: linear-gradient(0deg, rgba(8, 10, 14, .78), rgba(8, 10, 14, 0));
+  background: linear-gradient(0deg, rgba(6, 8, 12, .82), rgba(6, 8, 12, 0));
 }
 
 #world { position: absolute; inset: 0; }
@@ -126,10 +131,6 @@ body.framed #bezel {
 .ent { position: absolute; left: 0; top: 0; transform-origin: bottom center; will-change: transform; }
 .ent > i { display: block; width: 100%; height: 100%; background: center / contain no-repeat; image-rendering: pixelated; }
 .ent.pickup > i { animation: bob 1s ease-in-out infinite; }
-/* Tile seams, spawned at the plate's own spacing and travelling with everything
-   else. Sampled from the art: darker at the far end, warmer up close. */
-.ent.rung { background: linear-gradient(90deg, rgba(83,50,35,.12), rgba(61,32,17,.58) 12%,
-                                              rgba(61,32,17,.58) 88%, rgba(83,50,35,.12)); }
 
 /* Pickups: the bag you want, and the booster that buys you six seconds. */
 .ent.vax > i, .ent.tyl > i { animation: bob .8s ease-in-out infinite; }
@@ -153,7 +154,7 @@ body.framed #bezel {
 
 /* Pursuer — nearest the camera. Base box is his size at proximity 0;
    mockup 2a shows him at 119 x 190 / bottom 74 with the meter at 62%. */
-#pursuer { left: 0; top: 0; width: 101px; height: 208px; }
+#pursuer { left: 0; top: 0; width: 92px; height: 190px; }
 #pursuer > i {
   background-image: url('assets/pursuer_run.png');
   background-size: 800% 100%;
