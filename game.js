@@ -68,6 +68,11 @@ const OBS_GAP_LATE = [1.25, 2.1];
 const PICKUP_GAP   = [1.1, 2.3];
 const SEAM_GAP     = 0.30;           // the floor plate's own tile spacing, in z
 
+// The shelving loop. Each cycle grows the walls by this factor before handing
+// over to the other copy. Kept small so the cross-fade is brief and frequent
+// rather than long and obvious.
+const SHELF_RATIO  = 1.42;
+
 // Sizes are the sprite's size at the runner's depth (z = 1); perspective does the rest.
 // The runner is one file per frame, so a single pose can be redrawn and
 // dropped in on its own. Bump RUNNER_FRAMES if the cycle gains or loses one.
@@ -170,7 +175,7 @@ const el = {
   runner: $('runner'), pursuer: $('pursuer'), labelTag: $('labelTag'),
   speedTag: $('speedTag'), vignette: $('vignette'), flash: $('flash'),
   hud: $('hud'), prox: document.querySelector('.prox'), proxFill: $('proxFill'), proxState: $('proxState'),
-  seams: $('seams'),
+  seams: $('seams'), shelvesA: $('shelvesA'), shelvesB: $('shelvesB'),
   bags: $('bags'), lives: $('lives'), dist: $('dist'), hiSmall: $('hiSmall'),
   delay: $('delay'), delaySecs: $('delaySecs'), delayFill: $('delayFill'),
   pickupFlash: $('pickupFlash'), hints: $('hints'),
@@ -245,6 +250,7 @@ const g = {
   prox: PROX_START, meters: 0, bags: BAGS_START, lost: 0,
   pursuerX: STAGE_W / 2,
   nextObs: 0, nextPickup: 0, nextRung: 0,
+  shelfPhase: 0,
   labelAt: 0, labelUntil: 0,
   lives: 0, vaxAt: 0,
   tylAt: 0, powerUntil: 0,
@@ -258,7 +264,7 @@ function resetRun() {
     t: 0, odo: 0, speed: SPEED_BASE, lane: 0, laneX: STAGE_W / 2, invuln: 0,
     prox: PROX_START, meters: 0, bags: BAGS_START, lost: 0, pursuerX: STAGE_W / 2,
     nextObs: 1.2, nextPickup: 2.4, nextRung: 0,
-    labelAt: rand(LABEL_EVERY), labelUntil: 0,
+    shelfPhase: 0, labelAt: rand(LABEL_EVERY), labelUntil: 0,
     lives: 0, vaxAt: VAX_FIRST,
     tylAt: TYL_FIRST, powerUntil: 0,
   });
@@ -483,6 +489,10 @@ function step(dt) {
   g.speed = SPEED_BASE + (SPEED_MAX - SPEED_BASE) * Math.min(1, g.t / SPEED_RAMP);
   const eff = g.speed * (power ? 2 : 1);
   g.odo += eff * dt;
+  // Match the walls to the floor at the runner's depth: entities move through
+  // depth linearly, the walls multiplicatively, so they agree at one depth and
+  // that is the one to pick.
+  g.shelfPhase = (g.shelfPhase + eff * dt / Math.log(SHELF_RATIO)) % 1;
   g.meters += eff * dt * METERS_PER_Z;
 
   // ── proximity
@@ -575,7 +585,17 @@ function step(dt) {
   }
 }
 
+// Grow the two shelf copies. Phase 0..1 is one hand-over.
+function renderShelves(p) {
+  const w = Math.sin(Math.PI * p);
+  el.shelvesA.style.transform = 'scale(' + Math.pow(SHELF_RATIO, p).toFixed(4) + ')';
+  el.shelvesB.style.transform = 'scale(' + Math.pow(SHELF_RATIO, (p + 0.5) % 1).toFixed(4) + ')';
+  el.shelvesA.style.opacity = (w * w).toFixed(3);
+  el.shelvesB.style.opacity = (1 - w * w).toFixed(3);
+}
+
 function render(dt) {
+  renderShelves(g.shelfPhase);
   // runner — leans into the lane change, which is the only move he has
   const leanX = (STAGE_W / 2 + g.lane * LANE_X) - g.laneX;
   el.runner.style.transform = 'translate(' + (g.laneX - 29).toFixed(1) + 'px, 436px) rotate(' +
@@ -698,6 +718,7 @@ function preload() {
 }
 
 function ready() {
+  renderShelves(0);
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(fit);
   toTitle();
   raf = requestAnimationFrame(frame);

@@ -101,10 +101,18 @@ body.framed #bezel {
   background: #F6F3E8 url('assets/bg_aisle_floor.png') center / cover no-repeat;
 }
 #seams { position: absolute; inset: 0; }
-#shelves {
+/* The shelving streams past. Scaling about the aisle's vanishing point grows
+   everything toward the camera along the correct sight lines, which is what
+   running past a wall looks like. The plate's product columns are irregular,
+   so the loop cannot close by exact repetition — two copies half a cycle
+   apart cross-fade instead, sin^2 against cos^2 so they sum to 1 and whichever
+   is about to snap back is invisible when it does. */
+.shelf-layer {
   position: absolute; inset: 0;
   background: url('assets/bg_aisle_shelves.png') center / cover no-repeat;
+  transform-origin: 195px 372.6px;
   pointer-events: none;
+  will-change: transform, opacity;
 }
 
 /* The aisle is bright at the far end and pale underfoot, so the chrome needs
