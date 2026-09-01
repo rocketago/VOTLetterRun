@@ -67,7 +67,12 @@ const PROX_DODGE   = 0.008;   // every obstacle that goes by in another lane
 // closing on the runner means moving away from the camera - up the screen and
 // smaller. Proximity sets the baseline; a lunge rides on top of it so a hit
 // reads as a surge rather than a 13px nudge, and decays back.
-const PURSUER_Z    = [0.40, 0.56];   // at proximity 0 and 1
+//
+// His head sits at HORIZON_Y + (PERSP - PURSUER_H) / z, so it clears the bottom
+// edge at z = 0.2796. The far end sits well past that, so he is gone from the
+// screen entirely for the bottom fifth of the meter - off a booster, or at the
+// start of a run - and climbs back into frame from there.
+const PURSUER_Z    = [0.20, 0.56];   // at proximity 0 and 1
 const PURSUER_W    = 58;             // his size at the runner's depth: a person
 const PURSUER_H    = 120;
 const LUNGE_HIT    = 0.30;
@@ -731,7 +736,8 @@ function render(dt) {
   el.pursuer.style.height = ph.toFixed(1) + 'px';
   el.pursuer.style.transform = 'translate(' + px.toFixed(1) + 'px,' + py.toFixed(1) + 'px)';
   // The label-check beat sits just above his head.
-  el.labelTag.style.transform = 'translate(' + (g.pursuerX - 46).toFixed(1) + 'px,' + (py - 14).toFixed(1) + 'px)';
+  el.labelTag.style.transform = 'translate(' + (g.pursuerX - 46).toFixed(1) + 'px,'
+    + Math.min(py - 14, STAGE_H - 40).toFixed(1) + 'px)';
 
   // HUD
   el.proxFill.style.width = (g.prox * 100).toFixed(1) + '%';

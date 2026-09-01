@@ -35,9 +35,10 @@ python3 -m http.server 8000     # then open http://localhost:8000
   for every obstacle that goes past in another lane. When it fills, he has you.
 - **The chase is his depth.** He runs between you and the camera, so closing on
   you means moving *away* from the camera — up the path and smaller. Proximity
-  sets where he sits; a lunge rides on top of it, so a hit shoves him 28px
+  sets where he sits; a lunge rides on top of it, so a hit shoves him 83px
   closer at once and then eases off, a dodge nudges him back, and Tylenol drops
-  him 75px in one go.
+  him clean off the bottom of the screen. For the bottom fifth of the meter he
+  is not on screen at all: when you are safe, he is gone.
 - **He stops to read an ingredients label** on a random 4–9 s interval, which
   costs him about a second and a half of ground.
 - **Boosters** appear on the shelves every 20–30 s. Take one for six seconds at
