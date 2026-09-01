@@ -77,14 +77,31 @@ All three numbers are measured off the corridor plate, not chosen: the
 vanishing point is its frame centre, and the lanes are two thirds of the path's
 half-width where the runner stands. Sprites are authored at their size at
 `z = 1`, so a pork chop is 58 × 47.8 in the tables and the perspective does the
-rest. Items spawn at `z = 4.2` — just under the vanishing point, about a second
-and a half of warning at base speed — and are removed at `z = 0.50`, past the
-camera.
+rest.
 
-The corridor itself does not use `z`. It is one self-similar image scaled about
-that same vanishing point, and its rate is matched to entity motion at the
-runner's depth — about 2.9 doublings a second at base speed. See *The corridor*
-in `ART-BRIEF.md`.
+**Depth decays, it does not count down.** The corridor is one self-similar
+image scaled about that same vanishing point, so its rings sit a fixed *ratio*
+apart in depth, and holding a constant on-screen rate means `z` falls by a
+constant factor per second rather than a constant amount. Everything that
+travels obeys the same law:
+
+```js
+e.z *= Math.exp(-speed * dt)
+```
+
+Ticking `z` down linearly instead agrees with the corridor at exactly one
+depth — the runner's — and nowhere else. At `z = 4.2` the world flowed past
+4.7x faster than the food standing on it and the path edge swept outward 7x
+faster, so items hung near the vanishing point looking pinned to nothing and
+then whipped out sideways as they arrived. The ratio test in `drift.js` pins
+this: `ln(z) + odometer` has to stay fixed for the whole of an item's run.
+
+So spawning is a ratio too. An item lives `ln(Z_SPAWN / Z_EXIT) / speed`
+seconds — from `z = 20`, a 3px speck deep in the haze, to `z = 0.50` past the
+camera: 2.3 seconds at base speed, of which the last 1.3 are close enough to
+read which lane it is in. Speed is in e-folds of depth per second, and the
+corridor runs at 2.3 doublings a second from the same number. See *The
+corridor* in `ART-BRIEF.md`.
 
 ## Tuning
 

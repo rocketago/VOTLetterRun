@@ -32,14 +32,21 @@ const PERSP          = RUNNER_FEET_Y - HORIZON_Y;
 // Three lanes across the path at the runner's depth, so the hedges bound them.
 // At 61 they tile his 58px width almost exactly - a narrow path, run single file.
 const LANE_X         = Math.round(AISLE_SPREAD * PERSP * 2 / 3);
-const Z_SPAWN        = 4.2;   // just under the vanishing point
+// Depth decays by a constant factor per second, so spawning is a ratio, not a
+// distance: an item lives ln(Z_SPAWN / Z_EXIT) / speed seconds either way.
+const Z_SPAWN        = 20;    // a 3px speck deep in the haze; it grows out of it
 const Z_EXIT         = 0.50;  // past the camera, below the bottom edge
 const Z_RUNNER       = 1;
+const Z_FADE         = 0.88;  // fades in over the first eighth of the descent
 
-const SPEED_BASE = 2.0;       // z units per second
-const SPEED_MAX  = 3.2;
+// Speed is now a decay rate, shared with the corridor, so one number drives
+// everything. It is 20% off the old figure because matching the corridor
+// compresses the approach: an item is only readable from about z = 8, which at
+// the old 2.0 left barely a second to pick a lane.
+const SPEED_BASE = 1.6;       // e-folds of depth per second
+const SPEED_MAX  = 2.6;
 const SPEED_RAMP = 110;       // seconds to reach top speed
-const METERS_PER_Z = 12;      // a clean run lands near the mockup's 1264 m
+const METERS_PER_Z = 15;      // a clean run still lands near the mockup's 1264 m
 
 const PROX_START   = 0.30;
 const PROX_RATE    = 0.0105;  // per second at base speed
@@ -66,9 +73,9 @@ const TYL_FIRST    = 12;             // Tylenol: six seconds at double speed
 const TYL_EVERY    = [18, 28];
 const POWERUP_MS   = 6000;
 
-const OBS_GAP      = [1.7, 2.9];     // z units between obstacles, early
-const OBS_GAP_LATE = [1.25, 2.1];
-const PICKUP_GAP   = [1.1, 2.3];
+const OBS_GAP      = [1.35, 2.3];    // odometer units between obstacles, early
+const OBS_GAP_LATE = [1.0, 1.7];
+const PICKUP_GAP   = [0.9, 1.85];
 // The corridor loop. Measured off tex_aisle_ring.webp: its 924 x 2000 frame has
 // a 461 x 1000 hole centred within half a pixel of the frame centre, so the
 // picture is the frame at half scale and one cycle of the zoom is one doubling
@@ -292,7 +299,7 @@ function draw(e) {
   const y = yAt(e.z) - e.h;
   e.el.style.transform = 'translate(' + x.toFixed(1) + 'px,' + y.toFixed(1) + 'px) scale(' + s.toFixed(3) + ')' +
     (e.spin ? ' rotate(' + e.spin.toFixed(0) + 'deg)' : '');
-  e.el.style.opacity = e.z > Z_SPAWN - 0.55 ? ((Z_SPAWN - e.z) / 0.55).toFixed(2) : '1';
+  e.el.style.opacity = e.z > Z_SPAWN * Z_FADE ? ((Z_SPAWN - e.z) / (Z_SPAWN * (1 - Z_FADE))).toFixed(2) : '1';
 }
 
 /* ────────────────────────────────────────────────────────── state */
@@ -319,7 +326,7 @@ function resetRun() {
   Object.assign(g, {
     t: 0, odo: 0, speed: SPEED_BASE, lane: 0, laneX: STAGE_W / 2, invuln: 0,
     prox: PROX_START, meters: 0, bags: BAGS_START, lost: 0, pursuerX: STAGE_W / 2,
-    nextObs: 1.2, nextPickup: 2.4, zoomPhase: 0,
+    nextObs: 1.0, nextPickup: 1.9, zoomPhase: 0,
     labelAt: rand(LABEL_EVERY), labelUntil: 0,
     lives: 0, vaxAt: VAX_FIRST,
     tylAt: TYL_FIRST, powerUntil: 0,
@@ -578,7 +585,7 @@ function step(dt) {
   }
   if (g.odo >= g.nextPickup) {
     g.nextPickup = g.odo + rand(PICKUP_GAP);
-    const busy = ents.filter((e) => e.kind === 'obs' && e.z > Z_SPAWN - 0.8).map((e) => e.lane);
+    const busy = ents.filter((e) => e.kind === 'obs' && e.z > Z_SPAWN * Z_FADE).map((e) => e.lane);
     const free = [-1, 0, 1].filter((l) => busy.indexOf(l) < 0);
     if (free.length) {
       const sp = SPRITES[pick(CHIP_BAGS)];
@@ -609,7 +616,15 @@ function step(dt) {
   for (let i = ents.length - 1; i >= 0; i--) {
     const e = ents[i];
     const prevZ = e.z;
-    e.z -= eff * dt * (e.kind === 'drop' ? e.fall : 1);
+    // Exponentially, like the corridor. The corridor is one self-similar image
+    // scaled about the vanishing point, so its rings are a fixed *ratio* apart
+    // in depth and holding a constant on-screen rate means depth decays rather
+    // than counting down. An entity ticking down linearly agrees with that at
+    // exactly one depth - the runner's - and nowhere else: at z = 4.2 the world
+    // rushed past 4.7x faster than the food standing on it, and the path edge
+    // swept outward 7x faster, so items hung near the vanishing point looking
+    // pinned and then whipped out sideways as they arrived. Same law, no drift.
+    e.z *= Math.exp(-eff * dt * (e.kind === 'drop' ? e.fall : 1));
     if (e.spinRate) e.spin += e.spinRate * dt;
 
     if (prevZ > Z_RUNNER && e.z <= Z_RUNNER && !e.hitDone) {
