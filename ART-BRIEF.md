@@ -13,7 +13,6 @@ uniform, feet-aligned cells.
 
 | File | What it is |
 | --- | --- |
-| `tex_aisle_ring.png` | **The corridor.** The pink/blue test image. See *The corridor* below — it is the one file with a hard geometric requirement. |
 | `pickup_vax.png` | The vaccine dose. Drawn by `tools/draw_placeholders.py`. |
 | `pickup_tylenol.png` | The Tylenol bottle. Also drawn in code. |
 
@@ -31,8 +30,8 @@ freely.
 ## The corridor
 
 The run's background is a single self-similar image,
-`assets/tex_aisle_ring.png`, zoomed about its vanishing point. **This is
-placeholder art and needs replacing.** Its geometry drives the whole world: the
+`assets/tex_aisle_ring.webp`, zoomed about its vanishing point. Its geometry
+drives the whole world: the
 vanishing point is `HORIZON_Y` and the rate the aisle widens below it is
 `AISLE_SPREAD`, and the three lanes are derived from those, so they sit inside
 the shelves at whatever depth the runner stands.
@@ -44,27 +43,51 @@ The property the whole effect rests on: **the image's centre must be a
 transparent hole whose shape matches the frame, centred on the frame centre.**
 Scaling the picture until the hole fills the frame then lays it exactly onto
 itself, so the loop closes with no cross-fade and no constraint on how anything
-inside is spaced. Measured on the current placeholder:
+inside is spaced. Measured on the plate in use:
 
 | | |
 | --- | --- |
-| frame | 924 x 2000, aspect 0.4620 |
-| hole | 459 x 996, aspect 0.4608 |
-| hole centre | within 1px of the frame centre |
-| zoom ratio | 2.0131 across, 2.0080 down |
+| frame | 924 x 2000 |
+| hole | 461 x 1000, centre within half a pixel of the frame's |
+| zoom ratio | 2.0043 across, 2.0000 down |
+| vanishing point | frame centre, so `HORIZON_Y` 422 |
+| path edge | `AISLE_SPREAD` 0.3858, fitted to the grass over the near 500 rows |
 
-Those two ratios are `ZOOM_RATIO_X` and `ZOOM_RATIO_Y` in `game.js`, and the
-corridor's own geometry gives `HORIZON_Y` (423, the frame centre) and
-`AISLE_SPREAD` (0.4636). Replacing the art means re-measuring all four.
+Those live in `game.js`. **Replacing the art means re-measuring all of them** —
+`tools/key_sky.py` prints the first three, and the last is a fit to whatever
+bounds the walkable strip.
 
-Rings are drawn 4% oversized. Without that, the ring whose hole has grown to
-frame size leaves a hairline of wall colour around the screen border at exactly
-the moment the loop wraps.
+### Hand the plate to the tool, not to `assets/`
+
+```
+python3 tools/key_sky.py YOUR_PLATE.png
+```
+
+It does two things the plate cannot do for itself.
+
+**It takes the sky out of the zoom.** Everything the ring scaling preserves is
+a line *through* the vanishing point, which is why the path edges and the
+hedges hold together — but a smooth sky gradient is not, so each ring shows a
+differently stretched copy of it and the copies disagree along every hole
+boundary. Those seams are stark: in a pure-sky band the step across one
+measured 160x the gradient's own slope. The sky is at infinity, so it should
+not move at all; the tool keys it out and prints a `#sky` gradient, fitted from
+the plate, to sit behind every ring instead. That took the worst step to 2.5x,
+which is below the plate's own dithering.
+
+**It re-encodes.** The plate is 924 x 2000 of hand-noised foliage, which PNG
+cannot compress — 832 KB there against 138 KB as WebP. The encode is lossy in
+colour (about one level in 255) and bit-exact in alpha, so the hole keeps the
+geometry the whole loop depends on.
+
+Rings are drawn 1% oversized so the outermost one cannot leave a subpixel
+hairline at the frame border as it scales past.
 
 **To draw a replacement:** a corridor in one-point perspective, vanishing point
 dead centre, with the far end left fully transparent — and the transparent
 opening must be the frame's own shape at exactly half scale. Nothing else is
-constrained; the interior can be as detailed as you like.
+constrained; the interior can be as detailed as you like. Sky may be a
+gradient; the tool will lift it out.
 
 ## The runner: one file per frame
 

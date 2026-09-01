@@ -40,41 +40,51 @@ python3 -m http.server 8000     # then open http://localhost:8000
 
 ## Art status
 
-**The corridor is a placeholder** — the pink/blue test image, not final art.
-Everything else below still applies.
+Nearly all of it is real art now. The runner is held as eight separate frame
+files (`assets/runner_01.png` … `runner_08.png`) so any single pose can be
+replaced on its own. The pursuer and the three chip bags are real art, and so
+are the 50 recalled food items, cut from the food sheet by
+`tools/slice_sheets.py` against the cell map in `tools/food_sheet_map.txt`. The
+corridor is real art, prepared for the zoom by `tools/key_sky.py`.
 
-The runner is real art, held as eight separate frame files
-(`assets/runner_01.png` … `runner_08.png`) so any single pose can be replaced
-on its own. The pursuer and the three chip bags are real art too, and so are the 50
-recalled food items, cut from the food sheet by `tools/slice_sheets.py` using
-the cell map in `tools/food_sheet_map.txt`. Only the two power-up pickups are
-still stand-ins, drawn by `tools/draw_placeholders.py`. The background
-is still the previous theme's tunnel plate. `ART-BRIEF.md` lists every file,
-size and frame count; drop real sprites in at those filenames and nothing in
-the code has to change.
+Two things are still stand-ins: the vaccine and Tylenol pickups, drawn by
+`tools/draw_placeholders.py`, and `assets/bg_aisle.jpg` — the still plate
+behind the title, caught and leaderboard screens, which is a supermarket
+interior and no longer matches the hedge path you run down.
+
+`ART-BRIEF.md` lists every file, size and frame count; drop real art in at
+those filenames and nothing in the code has to change.
 
 ## Perspective
 
 The world is one-point perspective. Everything that travels has a depth `z`:
 
 ```
-z = 1     the runner's screen depth (fixed, top 300)
-z > 1     further up the aisle, toward the vanishing point
+z = 1     the runner's screen depth (fixed, his feet at 660)
+z > 1     further up the path, toward the vanishing point
 z < 1     between the runner and the camera
 ```
 
 Screen position and size fall out of `1/z`:
 
 ```js
-y     = HORIZON_Y + PERSP / z        // HORIZON_Y 30, PERSP 358
+y     = HORIZON_Y + PERSP / z        // HORIZON_Y 422, PERSP 238
 scale = 1 / z
-x     = 195 + lane * LANE_X / z      // LANE_X 118
+x     = 195 + lane * LANE_X / z      // LANE_X 61
 ```
 
-Sprites are authored at their size at `z = 1`, so a crate of romaine is
-52 × 47.7 in the tables and the perspective does the rest. Items spawn at
-`z = 4.2` — just under the vanishing point, about a second and a half of
-warning at base speed — and are removed at `z = 0.40`, past the camera.
+All three numbers are measured off the corridor plate, not chosen: the
+vanishing point is its frame centre, and the lanes are two thirds of the path's
+half-width where the runner stands. Sprites are authored at their size at
+`z = 1`, so a pork chop is 58 × 47.8 in the tables and the perspective does the
+rest. Items spawn at `z = 4.2` — just under the vanishing point, about a second
+and a half of warning at base speed — and are removed at `z = 0.50`, past the
+camera.
+
+The corridor itself does not use `z`. It is one self-similar image scaled about
+that same vanishing point, and its rate is matched to entity motion at the
+runner's depth — about 2.9 doublings a second at base speed. See *The corridor*
+in `ART-BRIEF.md`.
 
 ## Tuning
 
@@ -91,6 +101,7 @@ assets/                               art, generated
 tools/build_assets.py                 repacks source sheets into assets/
 tools/draw_placeholders.py            stand-in power-up sprites
 tools/slice_sheets.py                 cuts incoming sheets into named sprites
+tools/key_sky.py                      prepares a corridor plate for the zoom
 ART-BRIEF.md                          what art is still needed, and at what size
 project/                              the original Claude Design source
 ```

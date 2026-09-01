@@ -97,18 +97,26 @@ body.framed #bezel {
    ZOOM_RATIO lays the picture exactly onto itself and the loop closes with no
    cross-fade. Copies are stacked a doubling apart and seen through each
    other's holes; the haze covers the deepest, where the recursion stops. */
+/* The sky is at infinity: it does not zoom. It is keyed out of the corridor
+   plate by tools/key_sky.py and painted once, here, behind every ring - which
+   is the only way the ring boundaries can stop showing through it. The stops
+   are the plate's own gradient, fitted by that script. */
+#sky   { position: absolute; inset: 0; background: linear-gradient(#d0e9f0 0%, #56b4da 100%); }
 #rings { position: absolute; inset: 0; overflow: hidden; }
 .ring {
   position: absolute; inset: 0;
-  background: url('assets/tex_aisle_ring.png') center / 100% 100% no-repeat;
+  background: url('assets/tex_aisle_ring.webp') center / 100% 100% no-repeat;
   transform-origin: 50% 50%;
   will-change: transform;
 }
+/* Distance haze over the deepest rings. Tinted to the plate's own sky
+   (178, 221, 236) rather than pure white, which read as a hole punched in a
+   blue sky. */
 #haze {
   position: absolute; inset: 0; pointer-events: none;
   background: radial-gradient(circle at 50% 50%,
-    #fff 0%, #fff 4%, rgba(255,255,255,.92) 8%, rgba(255,255,255,.55) 14%,
-    rgba(255,255,255,.18) 23%, rgba(255,255,255,0) 36%);
+    #eef7fb 0%, #eef7fb 4%, rgba(233,245,251,.92) 8%, rgba(226,242,250,.58) 14%,
+    rgba(219,238,249,.20) 23%, rgba(219,238,249,0) 36%);
 }
 
 /* The corridor is bright, so the chrome needs its own ground to sit on.

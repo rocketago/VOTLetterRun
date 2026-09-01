@@ -20,14 +20,17 @@
 const STAGE_W = 390, STAGE_H = 844;
 
 // Measured off the corridor image: its far-end hole puts the vanishing point
-// at (195, 423) - the frame centre, which is what makes the zoom loop close -
-// and the corridor's half-width grows by 0.4636px for every px below that.
-const HORIZON_Y      = 423;
-const AISLE_SPREAD   = 0.4636;
-const RUNNER_FEET_Y  = 660;   // his depth; the corridor is ~220px wide here
+// at (195, 422) - the frame centre, which is what makes the zoom loop close -
+// and the path's half-width grows by 0.3858px for every px below that. Both
+// were fitted to the grass edge over the near 500 rows of the plate; the two
+// sides agree to within 1.5%.
+const HORIZON_Y      = 422;
+const AISLE_SPREAD   = 0.3858;
+const RUNNER_FEET_Y  = 660;   // his depth; the path is ~184px wide here
 const RUNNER_H       = 116;   // so his top edge sits at 544
 const PERSP          = RUNNER_FEET_Y - HORIZON_Y;
-// Three lanes across the aisle at the runner's depth, so the shelves bound them.
+// Three lanes across the path at the runner's depth, so the hedges bound them.
+// At 61 they tile his 58px width almost exactly - a narrow path, run single file.
 const LANE_X         = Math.round(AISLE_SPREAD * PERSP * 2 / 3);
 const Z_SPAWN        = 4.2;   // just under the vanishing point
 const Z_EXIT         = 0.50;  // past the camera, below the bottom edge
@@ -66,15 +69,16 @@ const POWERUP_MS   = 6000;
 const OBS_GAP      = [1.7, 2.9];     // z units between obstacles, early
 const OBS_GAP_LATE = [1.25, 2.1];
 const PICKUP_GAP   = [1.1, 2.3];
-// The corridor loop. Measured off tex_aisle_ring.png: the far-end hole is the
-// frame scaled by 1/2.013 across and 1/2.008 down, so one cycle of the zoom is
-// one doubling of depth. Rings are drawn slightly oversized, without which the
-// ring whose hole has grown to frame size leaves a hairline of wall colour
-// around the border at the moment the loop wraps.
-const ZOOM_RATIO_X  = 2.0131;
-const ZOOM_RATIO_Y  = 2.0080;
+// The corridor loop. Measured off tex_aisle_ring.webp: its 924 x 2000 frame has
+// a 461 x 1000 hole centred within half a pixel of the frame centre, so the
+// picture is the frame at half scale and one cycle of the zoom is one doubling
+// of depth. Rings are drawn a touch oversized so the outermost one, at the
+// moment it has scaled past the frame, cannot leave a subpixel hairline at the
+// border.
+const ZOOM_RATIO_X  = 2.0043;
+const ZOOM_RATIO_Y  = 2.0000;
 const ZOOM_RINGS    = 8;
-const ZOOM_OVERSCAN = 1.04;
+const ZOOM_OVERSCAN = 1.01;
 // The zoom multiplies depth; entities move through it linearly. They agree at
 // one depth, and the runner's is the one worth matching.
 const ZOOM_CYCLES_PER_Z = 1 / Math.log(Math.sqrt(ZOOM_RATIO_X * ZOOM_RATIO_Y));
@@ -160,7 +164,7 @@ const CHIP_BAGS = ['chips', 'chipsB', 'chipsG'];
 OBSTACLE_ART.forEach(([n, w, h]) => { SPRITES[n] = { img: n + '.png', w, h }; });
 
 const ASSETS = [
-  'assets/bg_aisle.jpg', 'assets/tex_aisle_ring.png',
+  'assets/bg_aisle.jpg', 'assets/tex_aisle_ring.webp',
   'assets/pursuer_run.png',
   'assets/pickup_chips.png', 'assets/pickup_chips_b.png', 'assets/pickup_chips_g.png',
   'assets/chip_drop.png',
