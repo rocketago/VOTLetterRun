@@ -31,8 +31,13 @@ python3 -m http.server 8000     # then open http://localhost:8000
 - **Bags** are the score you carry. Loose bags on the floor add three each.
 - **Recalled food** — 50 items off the FDA list — costs you about a quarter of
   your armful and lets him close. Change lane or wear it.
-- **Proximity** fills over time and jumps on every hit. When it fills, he has
-  you.
+- **Proximity** fills over time, jumps on every hit, and eases back a little
+  for every obstacle that goes past in another lane. When it fills, he has you.
+- **The chase is his depth.** He runs between you and the camera, so closing on
+  you means moving *away* from the camera — up the path and smaller. Proximity
+  sets where he sits; a lunge rides on top of it, so a hit shoves him 28px
+  closer at once and then eases off, a dodge nudges him back, and Tylenol drops
+  him 75px in one go.
 - **He stops to read an ingredients label** on a random 4–9 s interval, which
   costs him about a second and a half of ground.
 - **Boosters** appear on the shelves every 20–30 s. Take one for six seconds at
@@ -70,12 +75,16 @@ Screen position and size fall out of `1/z`:
 ```js
 y     = HORIZON_Y + PERSP / z        // HORIZON_Y 422, PERSP 238
 scale = 1 / z
-x     = 195 + lane * LANE_X / z      // LANE_X 61
+x     = 195 + lane * LANE_X / z      // LANE_X 48
 ```
 
-All three numbers are measured off the corridor plate, not chosen: the
-vanishing point is its frame centre, and the lanes are two thirds of the path's
-half-width where the runner stands. Sprites are authored at their size at
+The first two are measured off the corridor plate, not chosen: the vanishing
+point is its frame centre. The lane spacing is set by the *outer edge of the
+sprite*, not its centre — at two thirds of the half-width, which tiles the path
+exactly, the outer sprite reached 98% of the way to the hedge at every depth,
+so outer-lane food skimmed the hedge line for its whole trip and read as coming
+out of the bushes rather than down the path. Backing it off by half a sprite
+plus a margin puts it at 84%. `drift.js` guards that. Sprites are authored at their size at
 `z = 1`, so a pork chop is 58 × 47.8 in the tables and the perspective does the
 rest.
 

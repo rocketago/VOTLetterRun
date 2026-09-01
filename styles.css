@@ -162,7 +162,7 @@ body.framed #bezel {
 
 /* Pursuer — nearest the camera. Base box is his size at proximity 0;
    mockup 2a shows him at 119 x 190 / bottom 74 with the meter at 62%. */
-#pursuer { left: 0; top: 0; width: 92px; height: 190px; }
+#pursuer { left: 0; top: 0; width: 92px; height: 190px; }   /* sized per frame in game.js */
 #pursuer > i {
   background-image: url('assets/pursuer_run.png');
   background-size: 800% 100%;

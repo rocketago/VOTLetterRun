@@ -29,9 +29,16 @@ const AISLE_SPREAD   = 0.3858;
 const RUNNER_FEET_Y  = 660;   // his depth; the path is ~184px wide here
 const RUNNER_H       = 116;   // so his top edge sits at 544
 const PERSP          = RUNNER_FEET_Y - HORIZON_Y;
-// Three lanes across the path at the runner's depth, so the hedges bound them.
-// At 61 they tile his 58px width almost exactly - a narrow path, run single file.
-const LANE_X         = Math.round(AISLE_SPREAD * PERSP * 2 / 3);
+const RUNNER_W       = 58;
+// The outer lane is placed by its sprite's *outer edge*, not its centre. Two
+// thirds of the half-width tiles the path exactly, which sounds tidy and puts
+// the outer sprite 98% of the way to the hedge at every depth - 1 to 3px of
+// clear grass, so outer-lane food skimmed the hedge line for its whole trip and
+// read as coming out of the bushes rather than down the path. Back it off by
+// half a sprite plus a margin and it sits on grass instead. The lanes overlap
+// slightly at this width; the hitbox is the lane, not the pixels.
+const LANE_MARGIN    = 15;
+const LANE_X         = Math.round(AISLE_SPREAD * PERSP - RUNNER_W / 2 - LANE_MARGIN);
 // Depth decays by a constant factor per second, so spawning is a ratio, not a
 // distance: an item lives ln(Z_SPAWN / Z_EXIT) / speed seconds either way.
 const Z_SPAWN        = 20;    // a 3px speck deep in the haze; it grows out of it
@@ -54,6 +61,20 @@ const PROX_HIT     = 0.15;
 const PROX_PICKUP  = 0.006;
 const PROX_LABEL   = 0.05;    // per second while he stops to read a label
 const PROX_POWERUP = 0.10;    // clamped to this when the booster lands
+const PROX_DODGE   = 0.008;   // every obstacle that goes by in another lane
+
+// Where he runs, as a depth: he is between the camera and the runner, so
+// closing on the runner means moving away from the camera - up the screen and
+// smaller. Proximity sets the baseline; a lunge rides on top of it so a hit
+// reads as a surge rather than a 13px nudge, and decays back.
+const PURSUER_Z    = [0.40, 0.56];   // at proximity 0 and 1
+const PURSUER_W    = 58;             // his size at the runner's depth: a person
+const PURSUER_H    = 120;
+const LUNGE_HIT    = 0.30;
+const LUNGE_DODGE  = 0.05;
+const LUNGE_POWER  = 0.35;
+const LUNGE_FLOOR  = -0.30;
+const LUNGE_DECAY  = 2.2;            // e-folds per second back to the baseline
 
 const BAGS_START   = 24;
 const BAGS_PICKUP  = 3;
@@ -315,7 +336,7 @@ const g = {
   pursuerX: STAGE_W / 2,
   nextObs: 0, nextPickup: 0, zoomPhase: 0,
   labelAt: 0, labelUntil: 0,
-  lives: 0, vaxAt: 0,
+  lives: 0, vaxAt: 0, lunge: 0,
   tylAt: 0, powerUntil: 0,
   best: store.get('best', 0), eaten: store.get('eaten', 0),
 };
@@ -326,7 +347,7 @@ function resetRun() {
   Object.assign(g, {
     t: 0, odo: 0, speed: SPEED_BASE, lane: 0, laneX: STAGE_W / 2, invuln: 0,
     prox: PROX_START, meters: 0, bags: BAGS_START, lost: 0, pursuerX: STAGE_W / 2,
-    nextObs: 1.0, nextPickup: 1.9, zoomPhase: 0,
+    nextObs: 1.0, nextPickup: 1.9, zoomPhase: 0, lunge: 0,
     labelAt: rand(LABEL_EVERY), labelUntil: 0,
     lives: 0, vaxAt: VAX_FIRST,
     tylAt: TYL_FIRST, powerUntil: 0,
@@ -445,12 +466,18 @@ function toBoard(from) {
 
 /* ────────────────────────────────────────────────────────── run events */
 
+function dodge() {
+  g.prox = clamp(g.prox - PROX_DODGE, 0, 1);
+  g.lunge = Math.max(LUNGE_FLOOR, g.lunge - LUNGE_DODGE);
+}
+
 function hit() {
   if (g.invuln > 0) return;
   const lost = Math.min(g.bags, Math.max(BAGS_LOSS_MIN, Math.round(g.bags * BAGS_LOSS)));
   g.bags -= lost;
   g.lost += lost;
   g.prox = clamp(g.prox + PROX_HIT, 0, 1);
+  g.lunge = Math.min(1, g.lunge + LUNGE_HIT);
   g.invuln = INVULN_MS;
   sfx.hit();
 
@@ -517,6 +544,7 @@ function flash(msg) {
 function powerUp() {
   g.powerUntil = g.t * 1000 + POWERUP_MS;
   g.prox = Math.min(g.prox, PROX_POWERUP);
+  g.lunge = Math.max(LUNGE_FLOOR, g.lunge - LUNGE_POWER);
   sfx.power();
 
   el.labelTag.style.display = 'none';
@@ -564,6 +592,7 @@ function step(dt) {
     g.prox = clamp(g.prox, 0, 1);
   }
   if (g.powerUntil && !power) endPowerUp();
+  g.lunge *= Math.exp(-LUNGE_DECAY * dt);
 
   // ── runner
   if (g.invuln > 0) g.invuln -= dt * 1000;
@@ -629,6 +658,7 @@ function step(dt) {
 
     if (prevZ > Z_RUNNER && e.z <= Z_RUNNER && !e.hitDone) {
       e.hitDone = true;
+      if (e.lane !== g.lane && e.kind === 'obs') dodge();
       if (e.lane === g.lane) {
         if (e.kind === 'obs') hit();
         else if (e.kind === 'pickup') { collect(); kill(e); ents.splice(i, 1); continue; }
@@ -676,15 +706,20 @@ function render(dt) {
     clamp(leanX * -0.06, -7, 7).toFixed(1) + 'deg)';
   el.speedTag.style.transform = 'translate(' + (g.laneX - 58).toFixed(1) + 'px, 532px)';
 
-  // pursuer — closes on the runner as proximity fills (mockup 2a at 62%: bottom 74, 119 x 190)
-  const w = lerp(92, 80, g.prox);
-  const s = w / 92;
-  const bottom = lerp(-34, -8, g.prox);   // he is cropped by the bottom edge
+  // pursuer — his depth is the chase. Hits shove it toward the runner, dodges
+  // and the booster push it back, and he is drawn on the same 1/z as the world,
+  // so he grows out of the bottom edge as he drops back and rises up the path
+  // as he closes.
+  const chase = clamp(g.prox + g.lunge, 0, 1);
+  const pz = lerp(PURSUER_Z[0], PURSUER_Z[1], chase);
+  const pw = PURSUER_W / pz, ph = PURSUER_H / pz;
   g.pursuerX += ((STAGE_W / 2 + g.lane * LANE_X * 0.55) - g.pursuerX) * Math.min(1, dt * 3.2);
-  const jitter = g.prox > 0.8 ? (Math.random() - 0.5) * (g.prox - 0.8) * 22 : 0;
-  const px = g.pursuerX - 46 + jitter;
-  const py = STAGE_H - bottom - 190;
-  el.pursuer.style.transform = 'translate(' + px.toFixed(1) + 'px,' + py.toFixed(1) + 'px) scale(' + s.toFixed(3) + ')';
+  const jitter = chase > 0.8 ? (Math.random() - 0.5) * (chase - 0.8) * 22 : 0;
+  const px = g.pursuerX - pw / 2 + jitter;
+  const py = yAt(pz) - ph;
+  el.pursuer.style.width = pw.toFixed(1) + 'px';
+  el.pursuer.style.height = ph.toFixed(1) + 'px';
+  el.pursuer.style.transform = 'translate(' + px.toFixed(1) + 'px,' + py.toFixed(1) + 'px)';
   // The label-check beat sits just above his head.
   el.labelTag.style.transform = 'translate(' + (g.pursuerX - 46).toFixed(1) + 'px,' + (py - 14).toFixed(1) + 'px)';
 
@@ -807,6 +842,7 @@ if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
 preload();
 
 // Handy for tuning / verification runs.
-window.SnackRun = { g, S, SPRITES, OBSTACLES, get mode() { return mode; }, startRun, toCaught, toTitle, toBoard, move, powerUp, ents: () => ents };
+window.SnackRun = { g, S, SPRITES, OBSTACLES,
+  geom: { HORIZON_Y, PERSP, AISLE_SPREAD, LANE_X, RUNNER_W, Z_SPAWN, Z_EXIT }, get mode() { return mode; }, startRun, toCaught, toTitle, toBoard, move, powerUp, ents: () => ents };
 
 })();

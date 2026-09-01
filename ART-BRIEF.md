@@ -83,6 +83,14 @@ geometry the whole loop depends on.
 Rings are drawn 1% oversized so the outermost one cannot leave a subpixel
 hairline at the frame border as it scales past.
 
+**Keep the path clear.** The walkable grass has to be a straight ray from the
+vanishing point. In the plate in use, foreground bushes lean across the near
+end, which narrows the usable strip to a half-width of about 0.386 per px
+against the 0.50 the hedge line itself suggests — so the lanes have to hug the
+middle, and there is a band of grass on each side that nothing can ever run on.
+Pulling those bushes back off the path would buy roughly a quarter more usable
+width and let the three lanes spread out.
+
 **To draw a replacement:** a corridor in one-point perspective, vanishing point
 dead centre, with the far end left fully transparent — and the transparent
 opening must be the frame's own shape at exactly half scale. Nothing else is
