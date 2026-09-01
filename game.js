@@ -292,12 +292,22 @@ fit();
 const pool = [];
 let ents = [];
 
+// Every field draw() or step() reads, so a recycled entity cannot inherit one.
+// dx in particular: only scattered crumbs set it, and it is a *screen* offset,
+// so an obstacle handed a dead crumb's object was drawn up to 55px out of its
+// lane at every depth - out in the hedge near the vanishing point, where its
+// own lane offset is only a few pixels.
+const ENT_DEFAULTS = {
+  z: Z_SPAWN, lane: 0, dead: false, hitDone: false,
+  spin: 0, spinRate: 0, dx: 0, fall: 1,
+};
+
 function spawn(kind, opts) {
   const e = pool.pop() || { el: document.createElement('div') };
   const d = e.el;
   d.className = 'ent ' + kind;
   d.style.cssText = '';
-  Object.assign(e, { kind, z: Z_SPAWN, lane: 0, dead: false, hitDone: false, spin: 0, spinRate: 0 }, opts);
+  Object.assign(e, { kind }, ENT_DEFAULTS, opts);
   d.style.width = e.w + 'px';
   d.style.height = e.h + 'px';
   {
@@ -316,7 +326,7 @@ function kill(e) {
 
 function draw(e) {
   const s = sAt(e.z);
-  const x = xAt(e.z, e.lane * (e.laneMul || 1)) - e.w / 2 + (e.dx || 0);
+  const x = xAt(e.z, e.lane) - e.w / 2 + e.dx;
   const y = yAt(e.z) - e.h;
   e.el.style.transform = 'translate(' + x.toFixed(1) + 'px,' + y.toFixed(1) + 'px) scale(' + s.toFixed(3) + ')' +
     (e.spin ? ' rotate(' + e.spin.toFixed(0) + 'deg)' : '');
@@ -653,7 +663,7 @@ function step(dt) {
     // rushed past 4.7x faster than the food standing on it, and the path edge
     // swept outward 7x faster, so items hung near the vanishing point looking
     // pinned and then whipped out sideways as they arrived. Same law, no drift.
-    e.z *= Math.exp(-eff * dt * (e.kind === 'drop' ? e.fall : 1));
+    e.z *= Math.exp(-eff * dt * e.fall);
     if (e.spinRate) e.spin += e.spinRate * dt;
 
     if (prevZ > Z_RUNNER && e.z <= Z_RUNNER && !e.hitDone) {
@@ -843,6 +853,6 @@ preload();
 
 // Handy for tuning / verification runs.
 window.SnackRun = { g, S, SPRITES, OBSTACLES,
-  geom: { HORIZON_Y, PERSP, AISLE_SPREAD, LANE_X, RUNNER_W, Z_SPAWN, Z_EXIT }, get mode() { return mode; }, startRun, toCaught, toTitle, toBoard, move, powerUp, ents: () => ents };
+  geom: { HORIZON_Y, PERSP, AISLE_SPREAD, LANE_X, RUNNER_W, Z_SPAWN, Z_EXIT }, spawn, get mode() { return mode; }, startRun, toCaught, toTitle, toBoard, move, powerUp, ents: () => ents };
 
 })();
